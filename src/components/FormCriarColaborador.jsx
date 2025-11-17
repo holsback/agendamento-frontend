@@ -85,8 +85,7 @@ function FormCriarColaborador({ onColaboradorCriado, colaboradorParaEditar, onCa
   /**
    * Efeito 2: Roda sempre que 'colaboradorParaEditar' OU 'opcoesPerfilPermitidas' OU 'meuPerfil' mudar.
    * Objetivo: Preencher o formulário para "Edição" ou "limpar" para "Criação".
-   *
-   * === ESTE É O EFEITO QUE VAMOS ALTERAR ===
+   * (Este é o efeito que corrigimos no Passo 2.1)
    */
   useEffect(() => {
       if (colaboradorParaEditar) {
@@ -95,12 +94,11 @@ function FormCriarColaborador({ onColaboradorCriado, colaboradorParaEditar, onCa
           setEmail(colaboradorParaEditar.email);
           setTelefone(colaboradorParaEditar.telefone);
           
-          // Encontra o objeto {value, label} correspondente ao perfil
           const perfilOpcao = opcoesPerfilPermitidas.find(op => op.value === colaboradorParaEditar.perfil) || 
-                              { value: colaboradorParaEditar.perfil, label: colaboradorParaEditar.perfil }; // Fallback (gambiarra) caso o perfil seja de nível superior
+                              { value: colaboradorParaEditar.perfil, label: colaboradorParaEditar.perfil };
           
           setPerfilSelecionado(perfilOpcao);
-          setSenha(""); // Senha fica em branco (opcional na edição)
+          setSenha(""); 
           setErro("");
           setSucesso("");
       } else {
@@ -110,18 +108,15 @@ function FormCriarColaborador({ onColaboradorCriado, colaboradorParaEditar, onCa
           setTelefone("");
           setSenha("");
           
-          // === NOSSA ALTERAÇÃO ESTÁ AQUI ===
-          // Verifica se o admin logado é Gerente E se as opções já foram carregadas
+          // Se for Gerente, pré-seleciona "Profissional"
           if (meuPerfil === 'ROLE_GERENTE' && opcoesPerfilPermitidas.length === 1) {
-              // Se sim, pré-seleciona o único perfil que ele pode criar (Profissional)
               setPerfilSelecionado(opcoesPerfilPermitidas[0]);
           } else {
-              // Caso contrário (Master ou Dono), deixa ele escolher (seta como nulo)
+              // Se for Master/Dono, força ele a escolher
               setPerfilSelecionado(null);
           }
-          // --- FIM DA ALTERAÇÃO ---
       }
-  }, [colaboradorParaEditar, opcoesPerfilPermitidas, meuPerfil]); // <-- MUDANÇA: Adicionamos 'meuPerfil' à lista de dependências
+  }, [colaboradorParaEditar, opcoesPerfilPermitidas, meuPerfil]); 
 
   /**
    * Função chamada quando o usuário clica no botão "Salvar" (submit)
@@ -132,38 +127,31 @@ function FormCriarColaborador({ onColaboradorCriado, colaboradorParaEditar, onCa
     setErro("");
     setSucesso("");
 
-    // Limpamos o telefone ANTES de enviá-lo para a API
-    // (Esta foi a correção do Problema 1)
+    // Limpa o telefone (Correção do Problema 1)
     const telefoneLimpo = telefone.replace(/\D/g, "");
 
     try {
       if (colaboradorParaEditar) {
           // --- MODO EDIÇÃO (PUT) ---
-          
-          // Prepara o "pacote" de dados que vai para a API
           const dadosAtualizados = {
             nome: nome,
             telefone: telefoneLimpo, 
             perfil: perfilSelecionado ? perfilSelecionado.value : null,
-            senha: senha || null // Envia 'null' se a senha estiver em branco (para não alterar)
+            senha: senha || null 
           };
-
-          // Chama a API (PUT)
           await axios.put(`http://localhost:8080/admin/atualizar-colaborador/${colaboradorParaEditar.id}`, dadosAtualizados);
           setSucesso(`Colaborador ${nome} atualizado com sucesso!`);
+          // (No modo Edição, não limpamos o form,
+          // pois o admin pode querer cancelar a edição ou editar de novo)
       
       } else {
           // --- MODO CRIAÇÃO (POST) ---
-          
-          // Validação local (só no modo Criação)
           if (!senha) {
               setErro("A senha inicial é obrigatória.");
               setCarregando(false);
               return;
           }
           
-          // Chama a API (POST)
-          // Agora 'perfilSelecionado.value' vai funcionar, pois ele foi pré-setado no useEffect 2
           await axios.post("http://localhost:8080/admin/criar-colaborador", {
             nome: nome,
             email: email,
@@ -172,16 +160,28 @@ function FormCriarColaborador({ onColaboradorCriado, colaboradorParaEditar, onCa
             perfil: perfilSelecionado.value 
           });
           setSucesso(`Colaborador ${perfilSelecionado.label} criado com sucesso!`);
+
+          // === NOSSA ALTERAÇÃO ESTÁ AQUI ===
+          // Após o sucesso da CRIAÇÃO, limpamos os campos do formulário
+          setNome("");
+          setEmail("");
+          setTelefone("");
+          setSenha("");
+          // Resetamos o dropdown (respeitando a regra do Gerente)
+          if (meuPerfil === 'ROLE_GERENTE') {
+              setPerfilSelecionado(opcoesPerfilPermitidas[0]);
+          } else {
+              setPerfilSelecionado(null);
+          }
+          // --- FIM DA ALTERAÇÃO ---
       }
       
-      // Se deu certo (try), avisa o componente "Pai" (DashboardAdmin)
-      // para ele recarregar a lista de membros.
+      // Avisa o "Pai" (DashboardAdmin) para recarregar a lista
       if (onColaboradorCriado) onColaboradorCriado(); 
 
     } catch (erroApi) {
       // Se deu errado (catch)
       console.error("Erro ao salvar colaborador:", erroApi);
-       // Tenta extrair a mensagem de erro específica da API
        if (erroApi.response && erroApi.response.data) {
          if (erroApi.response.data.messages) {
              setErro(erroApi.response.data.messages[0]);
@@ -193,24 +193,17 @@ function FormCriarColaborador({ onColaboradorCriado, colaboradorParaEditar, onCa
              setErro("Erro ao salvar colaborador.");
          }
        } else {
-         // Erro genérico (API offline)
          setErro("Erro ao conectar com o servidor.");
        }
     } finally {
-      // Roda sempre (dando certo ou errado)
       setCarregando(false); // Desliga o spinner
     }
   }
 
   // --- Lógica de Renderização ---
-
-  // Verifica se o dropdown de perfil deve ser travado
   const isPerfilDisabled = 
-      // Trava se for Gerente (só pode criar/editar Profissional)
       meuPerfil === 'ROLE_GERENTE' || 
-      // Trava se estiver editando um perfil que você não pode criar (ex: Dono editando Gerente, não pode mudar perfil)
       (colaboradorParaEditar && !opcoesPerfilPermitidas.find(op => op.value === colaboradorParaEditar.perfil));
-
 
   // --- Renderização (O que aparece na tela) ---
   return (
@@ -234,7 +227,7 @@ function FormCriarColaborador({ onColaboradorCriado, colaboradorParaEditar, onCa
             value={email} 
             onChange={e => setEmail(e.target.value)} 
             required 
-            disabled={!!colaboradorParaEditar} // Trava o email no modo edição (email é username, não deve mudar)
+            disabled={!!colaboradorParaEditar} 
             style={{ opacity: colaboradorParaEditar ? 0.5 : 1, cursor: colaboradorParaEditar ? 'not-allowed' : 'default' }}
         />
       </div>
@@ -243,13 +236,13 @@ function FormCriarColaborador({ onColaboradorCriado, colaboradorParaEditar, onCa
       <div className="input-grupo">
          <label>Perfil (Role)</label>
          <Select
-            options={opcoesPerfilPermitidas} // Lista de opções que o admin pode ver
-            value={perfilSelecionado} // Valor atual selecionado (agora pré-setado para Gerente)
-            onChange={setPerfilSelecionado} // Função para atualizar o estado
+            options={opcoesPerfilPermitidas} 
+            value={perfilSelecionado} 
+            onChange={setPerfilSelecionado} 
             placeholder={meuPerfil === 'ROLE_GERENTE' ? 'Profissional' : 'Selecione o cargo...'}
-            styles={darkSelectStyles} // Aplica o tema escuro
-            required={!colaboradorParaEditar} // Obrigatório só ao criar
-            isDisabled={isPerfilDisabled} // Trava o campo se necessário
+            styles={darkSelectStyles} 
+            required={!colaboradorParaEditar}
+            isDisabled={isPerfilDisabled} 
          />
       </div>
 
@@ -267,7 +260,7 @@ function FormCriarColaborador({ onColaboradorCriado, colaboradorParaEditar, onCa
             placeholder={colaboradorParaEditar ? 'Deixe em branco para não alterar' : 'Mínimo 8 caracteres'}
             value={senha} 
             onChange={e => setSenha(e.target.value)} 
-            required={!colaboradorParaEditar} // Obrigatório só ao criar
+            required={!colaboradorParaEditar} 
         />
       </div>
 
@@ -281,7 +274,6 @@ function FormCriarColaborador({ onColaboradorCriado, colaboradorParaEditar, onCa
           <button 
               type="submit" 
               className="botao-login" 
-              // A lógica de 'disabled' agora funciona, pois 'perfilSelecionado' estará PREENCHIDO para o Gerente
               disabled={carregando || (!colaboradorParaEditar && !perfilSelecionado)} 
               style={{ flex: 2, marginTop: 0 }}
           >
@@ -292,7 +284,7 @@ function FormCriarColaborador({ onColaboradorCriado, colaboradorParaEditar, onCa
           {colaboradorParaEditar && (
               <button 
                   type="button" 
-                  onClick={onCancelarEdicao} // Chama a função do "Pai" para limpar o form
+                  onClick={onCancelarEdicao} 
                   className="botao-secundario" 
                   style={{ flex: 1 }}
               >
