@@ -1,24 +1,35 @@
-import '../App.css';
-import { useState, useEffect } from 'react';
-import axios from 'axios';
-import Select from 'react-select';
-import { jwtDecode } from 'jwt-decode';
+import '../App.css'; // Importa CSS
+import { useState, useEffect } from 'react'; // Importa "ganchos" do React
+import axios from 'axios'; // Importa Axios para API
+import Select from 'react-select'; // Importa o componente de <Select> (dropdown)
+import { jwtDecode } from 'jwt-decode'; // Importa o decodificador de Token JWT
 
+/**
+ * Este componente é o formulário usado pelo Admin para CRIAR ou EDITAR Colaboradores.
+ * @param {object} props
+ * @param {function} props.onColaboradorCriado - Função para recarregar a lista (no "pai")
+ * @param {object} props.colaboradorParaEditar - Se este objeto existir, o form entra em modo "Edição"
+ * @param {function} props.onCancelarEdicao - Função para limpar o formulário e voltar ao modo "Criação"
+ */
 function FormCriarColaborador({ onColaboradorCriado, colaboradorParaEditar, onCancelarEdicao }) {
 
+  // --- Estados (Memória do Formulário) ---
   const [nome, setNome] = useState("");
   const [email, setEmail] = useState("");
   const [telefone, setTelefone] = useState("");
   const [senha, setSenha] = useState("");
-  const [perfilSelecionado, setPerfilSelecionado] = useState(null);
+  const [perfilSelecionado, setPerfilSelecionado] = useState(null); // Guarda o objeto { value, label }
 
-  const [opcoesPerfilPermitidas, setOpcoesPerfilPermitidas] = useState([]);
-  const [meuPerfil, setMeuPerfil] = useState(null); // Para sabermos quem está logado
+  // --- Estados de Lógica e Permissão ---
+  const [opcoesPerfilPermitidas, setOpcoesPerfilPermitidas] = useState([]); // Quais perfis o admin logado pode criar
+  const [meuPerfil, setMeuPerfil] = useState(null); // Guarda o perfil do admin logado (ex: ROLE_DONO)
 
+  // --- Estados de Feedback ---
   const [carregando, setCarregando] = useState(false);
   const [erro, setErro] = useState("");
   const [sucesso, setSucesso] = useState("");
 
+  // Estilos customizados para o Select (tema escuro)
   const darkSelectStyles = {
     control: (styles, { isDisabled }) => ({ 
         ...styles, 
@@ -39,20 +50,26 @@ function FormCriarColaborador({ onColaboradorCriado, colaboradorParaEditar, onCa
     input: (styles) => ({ ...styles, color: '#f0f0f0' })
   };
 
-  // 1. Define o perfil do admin logado E quais perfis ele pode criar/editar
+  /**
+   * Efeito 1: Roda UMA VEZ quando o componente carrega.
+   * Objetivo: Descobrir quem está logado (Master, Dono, Gerente?) e
+   * definir quais perfis ele tem permissão para criar/editar.
+   */
   useEffect(() => {
       const token = localStorage.getItem("authToken");
       if (token) {
-          const decoded = jwtDecode(token);
-          const perfilLogado = decoded.role;
+          const decoded = jwtDecode(token); // Decodifica o token
+          const perfilLogado = decoded.role; // Pega o (ex: "ROLE_DONO")
           setMeuPerfil(perfilLogado); // Salva o perfil do admin logado
 
+          // Lista de todos os perfis que podem ser criados
           const todasOpcoes = [
               { value: 'ROLE_DONO', label: 'Dono (Estabelecimento)' },
               { value: 'ROLE_GERENTE', label: 'Gerente' },
               { value: 'ROLE_PROFISSIONAL', label: 'Profissional' }
           ];
 
+          // Filtra a lista baseado na permissão (hierarquia)
           if (perfilLogado === 'ROLE_MASTER') {
               setOpcoesPerfilPermitidas(todasOpcoes); // Master pode tudo
           } else if (perfilLogado === 'ROLE_DONO') {
@@ -60,77 +77,99 @@ function FormCriarColaborador({ onColaboradorCriado, colaboradorParaEditar, onCa
           } else if (perfilLogado === 'ROLE_GERENTE') {
               setOpcoesPerfilPermitidas(todasOpcoes.filter(op => op.value === 'ROLE_PROFISSIONAL')); // Gerente só pode Pro
           } else {
-              setOpcoesPerfilPermitidas([]);
+              setOpcoesPerfilPermitidas([]); // Nenhuma permissão
           }
       }
-  }, []);
+  }, []); // Array vazio [] = roda só uma vez
 
-  // 2. Preenche o formulário quando clicamos em "Editar"
+  /**
+   * Efeito 2: Roda sempre que 'colaboradorParaEditar' mudar.
+   * Objetivo: Preencher o formulário quando o admin clica em "Editar".
+   */
   useEffect(() => {
       if (colaboradorParaEditar) {
-          // MODO EDIÇÃO
+          // MODO EDIÇÃO: Preenche os campos com os dados do colaborador
           setNome(colaboradorParaEditar.nome);
           setEmail(colaboradorParaEditar.email);
           setTelefone(colaboradorParaEditar.telefone);
+          
           // Encontra o objeto {value, label} correspondente ao perfil
           const perfilOpcao = opcoesPerfilPermitidas.find(op => op.value === colaboradorParaEditar.perfil) || 
-                              { value: colaboradorParaEditar.perfil, label: colaboradorParaEditar.perfil }; // Fallback caso o perfil seja de nível superior
+                              { value: colaboradorParaEditar.perfil, label: colaboradorParaEditar.perfil }; // Fallback (gambiarra) caso o perfil seja de nível superior
           
           setPerfilSelecionado(perfilOpcao);
-          setSenha(""); // Senha fica em branco (opcional)
+          setSenha(""); // Senha fica em branco (opcional na edição)
           setErro("");
           setSucesso("");
       } else {
-          // MODO CRIAÇÃO
+          // MODO CRIAÇÃO: Limpa os campos
           setNome("");
           setEmail("");
           setTelefone("");
           setSenha("");
           setPerfilSelecionado(null);
       }
-  }, [colaboradorParaEditar, opcoesPerfilPermitidas]);
+  }, [colaboradorParaEditar, opcoesPerfilPermitidas]); // Roda se o 'colaborador' ou as 'opcoes' mudarem
 
-  // 3. Função de Salvar (POST ou PUT)
+  /**
+   * Função chamada quando o usuário clica no botão "Salvar" (submit)
+   */
   async function handleSubmit(evento) {
-    evento.preventDefault();
+    evento.preventDefault(); // Impede o recarregamento da página
     setCarregando(true);
     setErro("");
     setSucesso("");
 
+    // === NOSSA ALTERAÇÃO ESTÁ AQUI ===
+    // Limpamos o telefone ANTES de enviá-lo para a API
+    // .replace(/\D/g, "") remove tudo que NÃO é dígito
+    const telefoneLimpo = telefone.replace(/\D/g, "");
+
     try {
       if (colaboradorParaEditar) {
-          // MODO EDIÇÃO (PUT)
+          // --- MODO EDIÇÃO (PUT) ---
+          
+          // Prepara o "pacote" de dados que vai para a API
           const dadosAtualizados = {
             nome: nome,
-            telefone: telefone,
+            telefone: telefoneLimpo, // <-- MUDANÇA 1
             perfil: perfilSelecionado ? perfilSelecionado.value : null,
-            senha: senha || null // Envia null se a senha estiver em branco
+            senha: senha || null // Envia 'null' se a senha estiver em branco (para não alterar)
           };
 
+          // Chama a API (PUT)
           await axios.put(`http://localhost:8080/admin/atualizar-colaborador/${colaboradorParaEditar.id}`, dadosAtualizados);
           setSucesso(`Colaborador ${nome} atualizado com sucesso!`);
       
       } else {
-          // MODO CRIAÇÃO (POST)
+          // --- MODO CRIAÇÃO (POST) ---
+          
+          // Validação local (só no modo Criação)
           if (!senha) {
               setErro("A senha inicial é obrigatória.");
               setCarregando(false);
               return;
           }
+          
+          // Chama a API (POST)
           await axios.post("http://localhost:8080/admin/criar-colaborador", {
             nome: nome,
             email: email,
-            telefone: telefone,
+            telefone: telefoneLimpo, // <-- MUDANÇA 2
             senha: senha,
             perfil: perfilSelecionado.value
           });
           setSucesso(`Colaborador ${perfilSelecionado.label} criado com sucesso!`);
       }
       
+      // Se deu certo (try), avisa o componente "Pai" (DashboardAdmin)
+      // para ele recarregar a lista de membros.
       if (onColaboradorCriado) onColaboradorCriado(); 
 
     } catch (erroApi) {
+      // Se deu errado (catch)
       console.error("Erro ao salvar colaborador:", erroApi);
+       // Tenta extrair a mensagem de erro específica da API
        if (erroApi.response && erroApi.response.data) {
          if (erroApi.response.data.messages) {
              setErro(erroApi.response.data.messages[0]);
@@ -142,12 +181,16 @@ function FormCriarColaborador({ onColaboradorCriado, colaboradorParaEditar, onCa
              setErro("Erro ao salvar colaborador.");
          }
        } else {
+         // Erro genérico (API offline)
          setErro("Erro ao conectar com o servidor.");
        }
     } finally {
-      setCarregando(false);
+      // Roda sempre (dando certo ou errado)
+      setCarregando(false); // Desliga o spinner
     }
   }
+
+  // --- Lógica de Renderização ---
 
   // Verifica se o dropdown de perfil deve ser travado
   const isPerfilDisabled = 
@@ -157,17 +200,20 @@ function FormCriarColaborador({ onColaboradorCriado, colaboradorParaEditar, onCa
       (colaboradorParaEditar && !opcoesPerfilPermitidas.find(op => op.value === colaboradorParaEditar.perfil));
 
 
+  // --- Renderização (O que aparece na tela) ---
   return (
     <form className="formulario-login" onSubmit={handleSubmit}>
       <h2 className="titulo-login" style={{ marginTop: 0 }}>
           {colaboradorParaEditar ? 'Editando Colaborador' : 'Novo Colaborador'}
       </h2>
 
+      {/* Campo Nome */}
       <div className="input-grupo">
         <label>Nome</label>
         <input type="text" placeholder="Nome completo" value={nome} onChange={e => setNome(e.target.value)} required />
       </div>
 
+      {/* Campo Email */}
       <div className="input-grupo">
         <label>Email</label>
         <input 
@@ -181,25 +227,27 @@ function FormCriarColaborador({ onColaboradorCriado, colaboradorParaEditar, onCa
         />
       </div>
 
+      {/* Campo Perfil (Dropdown) */}
       <div className="input-grupo">
          <label>Perfil (Role)</label>
          <Select
-            options={opcoesPerfilPermitidas}
-            value={perfilSelecionado}
-            onChange={setPerfilSelecionado}
+            options={opcoesPerfilPermitidas} // Lista de opções que o admin pode ver
+            value={perfilSelecionado} // Valor atual selecionado
+            onChange={setPerfilSelecionado} // Função para atualizar o estado
             placeholder={meuPerfil === 'ROLE_GERENTE' ? 'Profissional' : 'Selecione o cargo...'}
-            styles={darkSelectStyles}
-            required={!colaboradorParaEditar}
-            isDisabled={isPerfilDisabled}
+            styles={darkSelectStyles} // Aplica o tema escuro
+            required={!colaboradorParaEditar} // Obrigatório só ao criar
+            isDisabled={isPerfilDisabled} // Trava o campo se necessário
          />
       </div>
 
+      {/* Campo Telefone */}
       <div className="input-grupo">
         <label>Telefone</label>
         <input type="tel" placeholder="(11) 99999-8888" value={telefone} onChange={e => setTelefone(e.target.value)} required />
       </div>
 
-      {/* Campo de Senha é opcional na edição */}
+      {/* Campo de Senha (é opcional na edição) */}
       <div className="input-grupo">
         <label>{colaboradorParaEditar ? 'Nova Senha (Opcional)' : 'Senha Inicial'}</label>
         <input 
@@ -211,23 +259,27 @@ function FormCriarColaborador({ onColaboradorCriado, colaboradorParaEditar, onCa
         />
       </div>
 
+      {/* Mensagens de Feedback */}
       {erro && <p className="mensagem-erro">{erro}</p>}
       {sucesso && <p className="mensagem-sucesso">{sucesso}</p>}
 
+      {/* Botões de Ação */}
       <div style={{ marginTop: '20px', display: 'flex', gap: '10px' }}>
+          {/* Botão de Salvar/Criar */}
           <button 
               type="submit" 
               className="botao-login" 
-              disabled={carregando || (!colaboradorParaEditar && !perfilSelecionado)} 
+              disabled={carregando || (!colaboradorParaEditar && !perfilSelecionado)} // Desabilita se estiver carregando OU se for modo "Criar" e o perfil não foi escolhido
               style={{ flex: 2, marginTop: 0 }}
           >
               {carregando ? 'Salvando...' : (colaboradorParaEditar ? 'Salvar Alterações' : 'Criar Colaborador')}
           </button>
           
+          {/* Botão de Cancelar (só aparece no modo Edição) */}
           {colaboradorParaEditar && (
               <button 
                   type="button" 
-                  onClick={onCancelarEdicao} 
+                  onClick={onCancelarEdicao} // Chama a função do "Pai" para limpar o form
                   className="botao-secundario" 
                   style={{ flex: 1 }}
               >
