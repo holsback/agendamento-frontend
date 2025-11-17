@@ -83,8 +83,10 @@ function FormCriarColaborador({ onColaboradorCriado, colaboradorParaEditar, onCa
   }, []); // Array vazio [] = roda só uma vez
 
   /**
-   * Efeito 2: Roda sempre que 'colaboradorParaEditar' mudar.
-   * Objetivo: Preencher o formulário quando o admin clica em "Editar".
+   * Efeito 2: Roda sempre que 'colaboradorParaEditar' OU 'opcoesPerfilPermitidas' OU 'meuPerfil' mudar.
+   * Objetivo: Preencher o formulário para "Edição" ou "limpar" para "Criação".
+   *
+   * === ESTE É O EFEITO QUE VAMOS ALTERAR ===
    */
   useEffect(() => {
       if (colaboradorParaEditar) {
@@ -107,9 +109,19 @@ function FormCriarColaborador({ onColaboradorCriado, colaboradorParaEditar, onCa
           setEmail("");
           setTelefone("");
           setSenha("");
-          setPerfilSelecionado(null);
+          
+          // === NOSSA ALTERAÇÃO ESTÁ AQUI ===
+          // Verifica se o admin logado é Gerente E se as opções já foram carregadas
+          if (meuPerfil === 'ROLE_GERENTE' && opcoesPerfilPermitidas.length === 1) {
+              // Se sim, pré-seleciona o único perfil que ele pode criar (Profissional)
+              setPerfilSelecionado(opcoesPerfilPermitidas[0]);
+          } else {
+              // Caso contrário (Master ou Dono), deixa ele escolher (seta como nulo)
+              setPerfilSelecionado(null);
+          }
+          // --- FIM DA ALTERAÇÃO ---
       }
-  }, [colaboradorParaEditar, opcoesPerfilPermitidas]); // Roda se o 'colaborador' ou as 'opcoes' mudarem
+  }, [colaboradorParaEditar, opcoesPerfilPermitidas, meuPerfil]); // <-- MUDANÇA: Adicionamos 'meuPerfil' à lista de dependências
 
   /**
    * Função chamada quando o usuário clica no botão "Salvar" (submit)
@@ -120,9 +132,8 @@ function FormCriarColaborador({ onColaboradorCriado, colaboradorParaEditar, onCa
     setErro("");
     setSucesso("");
 
-    // === NOSSA ALTERAÇÃO ESTÁ AQUI ===
     // Limpamos o telefone ANTES de enviá-lo para a API
-    // .replace(/\D/g, "") remove tudo que NÃO é dígito
+    // (Esta foi a correção do Problema 1)
     const telefoneLimpo = telefone.replace(/\D/g, "");
 
     try {
@@ -132,7 +143,7 @@ function FormCriarColaborador({ onColaboradorCriado, colaboradorParaEditar, onCa
           // Prepara o "pacote" de dados que vai para a API
           const dadosAtualizados = {
             nome: nome,
-            telefone: telefoneLimpo, // <-- MUDANÇA 1
+            telefone: telefoneLimpo, 
             perfil: perfilSelecionado ? perfilSelecionado.value : null,
             senha: senha || null // Envia 'null' se a senha estiver em branco (para não alterar)
           };
@@ -152,12 +163,13 @@ function FormCriarColaborador({ onColaboradorCriado, colaboradorParaEditar, onCa
           }
           
           // Chama a API (POST)
+          // Agora 'perfilSelecionado.value' vai funcionar, pois ele foi pré-setado no useEffect 2
           await axios.post("http://localhost:8080/admin/criar-colaborador", {
             nome: nome,
             email: email,
-            telefone: telefoneLimpo, // <-- MUDANÇA 2
+            telefone: telefoneLimpo,
             senha: senha,
-            perfil: perfilSelecionado.value
+            perfil: perfilSelecionado.value 
           });
           setSucesso(`Colaborador ${perfilSelecionado.label} criado com sucesso!`);
       }
@@ -232,7 +244,7 @@ function FormCriarColaborador({ onColaboradorCriado, colaboradorParaEditar, onCa
          <label>Perfil (Role)</label>
          <Select
             options={opcoesPerfilPermitidas} // Lista de opções que o admin pode ver
-            value={perfilSelecionado} // Valor atual selecionado
+            value={perfilSelecionado} // Valor atual selecionado (agora pré-setado para Gerente)
             onChange={setPerfilSelecionado} // Função para atualizar o estado
             placeholder={meuPerfil === 'ROLE_GERENTE' ? 'Profissional' : 'Selecione o cargo...'}
             styles={darkSelectStyles} // Aplica o tema escuro
@@ -269,7 +281,8 @@ function FormCriarColaborador({ onColaboradorCriado, colaboradorParaEditar, onCa
           <button 
               type="submit" 
               className="botao-login" 
-              disabled={carregando || (!colaboradorParaEditar && !perfilSelecionado)} // Desabilita se estiver carregando OU se for modo "Criar" e o perfil não foi escolhido
+              // A lógica de 'disabled' agora funciona, pois 'perfilSelecionado' estará PREENCHIDO para o Gerente
+              disabled={carregando || (!colaboradorParaEditar && !perfilSelecionado)} 
               style={{ flex: 2, marginTop: 0 }}
           >
               {carregando ? 'Salvando...' : (colaboradorParaEditar ? 'Salvar Alterações' : 'Criar Colaborador')}
