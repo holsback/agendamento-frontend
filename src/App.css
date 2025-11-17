@@ -1,0 +1,424 @@
+/* === RESET GERAL E TEMA ESCURO === */
+:root {
+  color-scheme: dark;
+}
+
+body {
+  font-family: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, 'Open Sans', 'Helvetica Neue', sans-serif;
+  background-color: #1a1a1a;
+  color: #f0f0f0;
+  margin: 0;
+  padding: 0;
+  min-height: 100vh;
+}
+
+/* === BOTÕES PADRONIZADOS (Alinhados) === */
+.botao-login, .botao-secundario {
+  padding: 12px;
+  border: none;
+  border-radius: 5px;
+  font-weight: bold;
+  font-size: 16px;
+  cursor: pointer;
+  box-sizing: border-box; 
+  line-height: normal;  
+  transition: background-color 0.2s ease, filter 0.2s ease;
+}
+
+.botao-login {
+  background-color: #0069ff;
+  color: white;
+  margin-top: 10px;
+}
+.botao-login:hover {
+  filter: brightness(1.1);
+}
+
+.botao-secundario {
+  background-color: #e76f51; 
+  color: white;
+  margin-top: 0; 
+}
+.botao-secundario:hover {
+  background-color: #f4a261; 
+}
+
+.botao-login:disabled {
+  background-color: #555;
+  cursor: not-allowed;
+}
+
+/* === ESTILOS PARA LOGIN / REGISTRO === */
+.container-login {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+  width: 350px;
+  margin: 10vh auto 0 auto;
+}
+
+.titulo-login {
+  font-size: 24px;
+  text-align: center;
+  margin-bottom: 20px;
+}
+
+.formulario-login {
+  display: flex;
+  flex-direction: column;
+  gap: 15px;
+}
+
+.input-grupo {
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+}
+
+.input-grupo label {
+  font-weight: bold;
+  font-size: 14px;
+}
+
+.input-grupo input, 
+.input-grupo select {
+  padding: 10px;
+  border-radius: 5px;
+  border: 1px solid #555;
+  background-color: #2a2a2a;
+  color: #f0f0f0;
+  font-size: 16px;
+  width: 100%;
+  box-sizing: border-box;
+}
+
+::-webkit-calendar-picker-indicator {
+  filter: invert(1);
+}
+
+.link-registro {
+  text-align: center;
+  font-size: 14px;
+  margin-top: 10px;
+}
+.link-registro a {
+  color: #0069ff;
+  text-decoration: none;
+  font-weight: bold;
+}
+.link-registro a:hover {
+  text-decoration: underline;
+}
+
+/* === MENSAGENS DE FEEDBACK === */
+.mensagem-erro {
+  color: #ff8a80;
+  background-color: #4d2626;
+  border: 1px solid #ff8a80;
+  border-radius: 5px;
+  padding: 10px;
+  text-align: center;
+  font-size: 14px;
+}
+
+.mensagem-sucesso {
+  color: #9aff9a;
+  background-color: #2a4d2a;
+  border: 1px solid #9aff9a;
+  border-radius: 5px;
+  padding: 10px;
+  text-align: center;
+  font-size: 14px;
+}
+
+/* === LISTAS GERAIS (Agendamentos e Equipe) === */
+.coluna-lista {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+
+.lista-agendamentos {
+  list-style-type: none;
+  padding: 0;
+  margin: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 15px;
+}
+
+.lista-agendamentos li {
+  background-color: #2a2a2a;
+  border: 1px solid #555;
+  border-radius: 8px;
+  padding: 20px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.lista-agendamentos li .linha-item {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    width: 100%;
+}
+
+.lista-agendamentos li strong {
+  color: #0069ff;
+  font-size: 18px;
+  display: block;
+  margin-bottom: 8px;
+  line-height: 1.4;
+}
+
+.lista-agendamentos li p {
+  margin: 0;
+  font-size: 14px;
+  color: #ccc;
+}
+
+/* === LAYOUT ADMINISTRATIVO === */
+.admin-container {
+  display: flex;
+  width: 100vw;
+  height: 100vh;
+  overflow: hidden;
+}
+
+.admin-sidebar {
+  width: 260px;
+  background-color: #222;
+  border-right: 1px solid #333;
+  display: flex;
+  flex-direction: column; 
+  padding: 20px;
+  flex-shrink: 0;
+  box-sizing: border-box;
+  transition: width 0.3s ease;
+  position: relative;
+  height: 100vh;
+}
+
+.admin-sidebar.collapsed {
+  width: 90px;
+}
+
+.admin-sidebar.collapsed .sidebar-logo-text { 
+  display: none;
+}
+
+.admin-sidebar.collapsed .sidebar-item {
+  justify-content: center;
+}
+
+.admin-sidebar.collapsed .sidebar-item-text {
+  display: none;
+}
+
+.sidebar-toggle {
+  background-color: #333;
+  border: 1px solid #444;
+  color: #ccc;
+  border-radius: 50%;
+  width: 30px;
+  height: 30px;
+  cursor: pointer;
+  position: absolute;
+  top: 25px;
+  right: -15px;
+  z-index: 1100;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: transform 0.3s ease;
+}
+
+.admin-sidebar.collapsed .sidebar-toggle {
+  transform: rotate(180deg);
+}
+
+.sidebar-logo {
+  font-size: 24px;
+  font-weight: bold;
+  color: #0069ff;
+  margin-bottom: 40px;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.sidebar-menu {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  flex-grow: 1; /* Empurra o logout para baixo */
+}
+
+.sidebar-item {
+  padding: 12px 15px;
+  border-radius: 8px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  color: #ccc;
+  font-weight: 500;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.sidebar-item:hover, .sidebar-item.active {
+  background-color: #0069ff1a;
+  color: #0069ff;
+}
+
+.sidebar-logout {
+  padding: 12px 15px;
+  border-radius: 8px;
+  cursor: pointer;
+  color: #ff8a80; 
+  font-weight: 500;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-top: 20px; 
+  border: 1px solid #4d2626;
+  background-color: #4d262633; 
+}
+.sidebar-logout:hover {
+  background-color: #4d2626; 
+  color: white;
+}
+.admin-sidebar.collapsed .sidebar-logout {
+  justify-content: center; 
+}
+
+.admin-content {
+  flex: 1;
+  background-color: #1a1a1a;
+  padding: 30px;
+  overflow-y: auto;
+  box-sizing: border-box;
+}
+
+.admin-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 30px;
+}
+
+.admin-header h2 {
+  margin: 0;
+  font-size: 28px;
+}
+
+.content-card {
+  background-color: #2a2a2a;
+  border: 1px solid #333;
+  border-radius: 12px;
+  padding: 25px;
+  margin-bottom: 30px;
+  box-shadow: 0 4px 20px rgba(0,0,0,0.2);
+}
+
+/* === ESTILOS PARA SUB-ABAS (Calendário / Lista) === */
+.sub-abas-container {
+  display: flex;
+  gap: 8px;
+  margin-bottom: 20px;
+  border-bottom: 1px solid #333;
+}
+.sub-aba {
+  padding: 10px 18px;
+  cursor: pointer;
+  border-bottom: 3px solid transparent;
+  color: #aaa;
+  font-weight: 500;
+  transition: all 0.2s ease;
+}
+.sub-aba:hover {
+  color: #fff;
+}
+.sub-aba.active {
+  color: #0069ff;
+  font-weight: bold;
+  border-bottom-color: #0069ff;
+}
+
+/* === ESTILOS DO FULLCALENDAR (Tema Escuro) === */
+.fc {
+  color: #f0f0f0;
+}
+.fc .fc-toolbar-title {
+  color: #f0f0f0;
+  font-size: 1.5em;
+}
+.fc .fc-button-primary {
+  background-color: #0069ff;
+  border: none;
+}
+.fc .fc-button-primary:hover {
+  background-color: #0058d9;
+}
+.fc .fc-daygrid-day-number, .fc .fc-col-header-cell-cushion {
+  color: #ccc;
+  text-decoration: none;
+}
+.fc .fc-day-today {
+  background-color: #0069ff1a !important;
+}
+.fc .fc-timegrid-slot {
+  border-bottom-color: #333 !important;
+}
+.fc-theme-standard th, .fc-theme-standard td {
+    border-color: #333;
+}
+
+.fc-event {
+  height: auto !important; /* Permite o bloco crescer verticalmente */
+  padding: 3px 5px !important; /* Padding interno */
+  font-size: 13px;
+  line-height: 1.3;
+}
+
+.fc-event-main {
+  white-space: normal !important; /* FORÇA a quebra de linha */
+  overflow: hidden !important; 
+  text-overflow: ellipsis !important;
+}
+
+/* === ESTILOS PARA OS SLOTS DE HORÁRIO === */
+.horarios-container {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(100px, 1fr));
+  gap: 10px;
+  margin-top: 10px;
+}
+
+.horario-slot {
+  background-color: #333;
+  border: 1px solid #555;
+  color: #f0f0f0;
+  padding: 10px;
+  border-radius: 6px;
+  text-align: center;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  font-weight: 500;
+}
+
+.horario-slot:hover {
+  background-color: #444;
+  border-color: #777;
+}
+
+.horario-slot.selecionado {
+  background-color: #0069ff;
+  border-color: #0069ff;
+  color: white;
+  font-weight: bold;
+}
