@@ -8,6 +8,7 @@ import FormConfiguracao from '../components/FormConfiguracao';
 import AdminServicos from '../components/AdminServicos';
 import AgendaCalendario from '../components/AgendaCalendario';
 
+// Componente (React) para o ícone de seta (usado no botão de recolher)
 const IconeSeta = () => (
     <svg width="10" height="10" viewBox="0 0 6 10" fill="none" xmlns="http://www.w3.org/2000/svg" style={{ display: 'block' }}>
         <path d="M5 1L1 5L5 9" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
@@ -85,14 +86,13 @@ function DashboardAdmin() {
     }, []); 
 
     /**
-     * === NOSSA ALTERAÇÃO DESTE PASSO ESTÁ AQUI ===
-     * Função "Callback" que é passada para o FormCriarColaborador.
-     * Simplificamos ela: Removemos o parâmetro 'foiCriacao'.
-     * Agora ela SEMPRE recarrega a lista E volta para a tela da lista.
+     * Função "Callback" (Passo 3.3 - Correção)
+     * Chamada pelo FormCriarColaborador após o sucesso.
+     * SEMPRE recarrega a lista E volta para a tela da lista.
      */
     function handleSucessoEquipe() {
         buscarColaboradores(); // 1. Recarrega a lista de membros
-        setColaboradorEmEdicao(null); // 2. Limpa o modo de edição (para o form ficar limpo)
+        setColaboradorEmEdicao(null); // 2. Limpa o modo de edição
         setModoEquipe('lista'); // 3. VOLTA PARA A TELA DA LISTA (SEMPRE)
     }
 
@@ -197,10 +197,8 @@ function DashboardAdmin() {
                 // --- SE 'modoEquipe' = 'formulario', mostra o FORMULÁRIO ---
                 <div className="content-card" style={{ maxWidth: '700px', margin: '0 auto' }}> 
                     <FormCriarColaborador 
-                        onColaboradorCriado={handleSucessoEquipe} // Passa a nova função simplificada
+                        onColaboradorCriado={handleSucessoEquipe} 
                         colaboradorParaEditar={colaboradorEmEdicao} 
-                        
-                        // Ao Cancelar: Limpa o modo de edição E volta para a lista
                         onCancelarEdicao={() => { 
                             setColaboradorEmEdicao(null); 
                             setModoEquipe('lista'); 
@@ -210,13 +208,20 @@ function DashboardAdmin() {
             )
           );
       
-      // 3. ABA SERVIÇOS (continua como estava)
+      // 3. ABA SERVIÇOS (Refatorada no Passo 4.1)
       } else if (abaAtiva === 'servicos') {
+           // O componente AdminServicos agora controla seu próprio layout interno
            return <AdminServicos />;
       
-      // 4. ABA CONFIGURAÇÕES (continua como estava)
+      // === NOSSA ALTERAÇÃO DESTE PASSO ESTÁ AQUI ===
       } else if (abaAtiva === 'config') {
-          return ( <div className="content-card"><FormConfiguracao /></div> );
+          // Adicionamos o 'style' inline para centralizar o card
+          // exatamente como fizemos nos formulários de Equipe e Serviços.
+          return ( 
+            <div className="content-card" style={{ maxWidth: '700px', margin: '0 auto' }}>
+                <FormConfiguracao />
+            </div> 
+          );
       }
   }
 
