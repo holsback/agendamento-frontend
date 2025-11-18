@@ -2,6 +2,7 @@ import '../App.css';
 import { useState, useEffect } from 'react'; 
 import { useNavigate } from 'react-router-dom';
 import FormNovoAgendamento from '../components/FormNovoAgendamento';
+import FormMeusDados from '../components/FormMeusDados';
 import axios from 'axios';
 
 const IconeSeta = () => (
@@ -75,7 +76,6 @@ function DashboardCliente() {
       return (
           <ul className="lista-agendamentos">
               {meusAgendamentos.map(ag => {
-                  // Define se existem botões para serem mostrados
                   const temBotoes = ag.status === 'Pendente';
 
                   return (
@@ -87,8 +87,6 @@ function DashboardCliente() {
                         alignItems: 'flex-start', 
                         gap: '20px'
                     }}>
-                        
-                        {/* === COLUNA DA ESQUERDA === */}
                         <div style={{ flex: 1 }}>
                             <strong style={{ fontSize: '1.3em', display: 'block', marginBottom: '10px' }}>
                                 {ag.servicos.join(', ')}
@@ -104,19 +102,15 @@ function DashboardCliente() {
                             </div>
                         </div>
 
-                        {/* === COLUNA DA DIREITA === */}
                         <div style={{ 
                             display: 'flex', 
                             flexDirection: 'column', 
                             alignItems: 'flex-end', 
                             gap: '10px',
                             minWidth: '160px',
-                            
-                            // Se NÃO tem botões (Concluído/Cancelado), centraliza o Status verticalmente
                             alignSelf: temBotoes ? 'auto' : 'stretch', 
                             justifyContent: temBotoes ? 'flex-start' : 'center'
                         }}>
-                            {/* STATUS */}
                             <span style={{
                                 padding: '10px 16px', 
                                 borderRadius: '8px', 
@@ -132,7 +126,6 @@ function DashboardCliente() {
                                 {ag.status}
                             </span>
 
-                            {/* BOTÃO VINCULAR (Agora só aparece se for Pendente) */}
                             {ag.status === 'Pendente' && (
                                 <button 
                                     onClick={() => handleVincularGoogle(ag)}
@@ -160,7 +153,6 @@ function DashboardCliente() {
                                 </button>
                             )}
 
-                            {/* BOTÃO CANCELAR (Só se for Pendente) */}
                             {ag.status === 'Pendente' && (
                                 <button onClick={() => handleCancelar(ag.idAgendamento)}
                                         style={{ 
@@ -226,6 +218,14 @@ function DashboardCliente() {
               </div>
           );
       }
+
+      // === Renderizar tela de Configurações ===
+      if (abaAtiva === 'configuracoes') {
+          return (
+              // Não precisa de card aqui pois o FormMeusDados já tem seu próprio card
+              <FormMeusDados />
+          );
+      }
   }
 
   return (
@@ -247,10 +247,13 @@ function DashboardCliente() {
                     onClick={() => setAbaAtiva('meus_agendamentos')}>
                     📅 <span className="sidebar-item-text">Meus Agendamentos</span>
                 </li>
-                <li className={`sidebar-item ${abaAtiva === 'novo' ? 'active' : ''}`}
-                    onClick={() => setAbaAtiva('novo')}>
-                    ➕ <span className="sidebar-item-text">Novo Agendamento</span>
+                
+                {/* === Item Configurações no Menu === */}
+                <li className={`sidebar-item ${abaAtiva === 'configuracoes' ? 'active' : ''}`}
+                    onClick={() => setAbaAtiva('configuracoes')}>
+                    ⚙️ <span className="sidebar-item-text">Configurações</span>
                 </li>
+
             </ul>
 
             <div className="sidebar-logout" onClick={handleLogout}>
@@ -262,7 +265,10 @@ function DashboardCliente() {
         <main className="admin-content">
             <header className="admin-header">
                 <h2>
-                    {abaAtiva === 'novo' ? 'Fazer Agendamento' : 'Painel do Cliente'}
+                    {/* === Título Dinâmico === */}
+                    {abaAtiva === 'novo' ? 'Fazer Agendamento' : 
+                     abaAtiva === 'configuracoes' ? 'Minhas Configurações' : 
+                     'Painel do Cliente'}
                 </h2>
                 <span style={{ color: '#aaa' }}>Olá, Cliente!</span>
             </header>
