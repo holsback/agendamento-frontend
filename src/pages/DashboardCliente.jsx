@@ -2,7 +2,6 @@ import '../App.css';
 import { useState, useEffect } from 'react'; 
 import { useNavigate } from 'react-router-dom';
 import FormNovoAgendamento from '../components/FormNovoAgendamento';
-import AgendaCalendario from '../components/AgendaCalendario';
 import axios from 'axios';
 
 const IconeSeta = () => (
@@ -14,9 +13,8 @@ const IconeSeta = () => (
 function DashboardCliente() {
   
   const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(false); 
-  const [abaAtiva, setAbaAtiva] = useState('calendario');
+  const [abaAtiva, setAbaAtiva] = useState('meus_agendamentos');
   const [refreshKey, setRefreshKey] = useState(0); 
-  const [dataClicada, setDataClicada] = useState(""); 
   
   const [meusAgendamentos, setMeusAgendamentos] = useState([]);
   const [carregandoLista, setCarregandoLista] = useState(true);
@@ -42,20 +40,14 @@ function DashboardCliente() {
   }
 
   useEffect(() => {
-      if (abaAtiva === 'gerenciar') {
+      if (abaAtiva === 'meus_agendamentos') {
           buscarMeusAgendamentos();
       }
   }, [abaAtiva, refreshKey]); 
 
   function handleSucessoAgendamento() {
-      setAbaAtiva('calendario'); 
+      setAbaAtiva('meus_agendamentos'); 
       setRefreshKey(prevKey => prevKey + 1); 
-      setDataClicada(""); 
-  }
-
-  function handleDateClick(dataISO) {
-      setDataClicada(dataISO); 
-      setAbaAtiva('novo');      
   }
   
   async function handleCancelar(id) {
@@ -67,80 +59,170 @@ function DashboardCliente() {
           });
           alert("Agendamento cancelado!");
           buscarMeusAgendamentos(); 
-          setRefreshKey(prevKey => prevKey + 1); 
       } catch (error) {
           alert("Erro ao cancelar o agendamento.");
       }
   }
+
+  function handleVincularGoogle(agendamento) {
+      alert("Funcionalidade futura: Vincular agendamento " + agendamento.idAgendamento + " ao Google Calendar.");
+  }
   
-  function renderizarGerenciamento() {
-      if (carregandoLista) return <p>Carregando...</p>;
-      if (meusAgendamentos.length === 0) return <p>Nenhum agendamento encontrado.</p>;
+  function renderizarListaMeusAgendamentos() {
+      if (carregandoLista) return <p>Carregando seus agendamentos...</p>;
+      if (meusAgendamentos.length === 0) return <p>Você ainda não tem agendamentos.</p>;
 
       return (
           <ul className="lista-agendamentos">
-              {meusAgendamentos.map(ag => (
-                  <li key={ag.idAgendamento}>
-                      <div className="linha-item">
-                          <strong>{ag.servicos.join(', ')}</strong>
-                          <span style={{
-                              padding: '4px 8px', borderRadius: '4px', fontSize: '12px', fontWeight: 'bold',
-                              backgroundColor: ag.status === 'Concluído' ? '#2a4d2a' : ag.status === 'Cancelado' ? '#4d2626' : '#444',
-                              color: ag.status === 'Concluído' ? '#9aff9a' : ag.status === 'Cancelado' ? '#ff8a80' : '#ccc'
-                          }}>
-                              {ag.status}
-                          </span>
-                      </div>
-                      <p>Com: {ag.nomeProfissional}</p>
-                      <p>Em: {new Date(ag.dataHora).toLocaleString('pt-BR', { dateStyle: 'short', timeStyle: 'short' })}</p>
-                      
-                      {ag.status === 'Pendente' && (
-                          <div style={{ marginTop: '15px' }}>
-                              <button onClick={() => handleCancelar(ag.idAgendamento)}
-                                      style={{ width: '100%', padding: '8px', backgroundColor: '#e76f51', color: 'white', border: 'none', borderRadius: '4px', cursor: 'pointer' }}>
-                                  ❌ Cancelar Agendamento
-                              </button>
-                          </div>
-                      )}
-                  </li>
-              ))}
+              {meusAgendamentos.map(ag => {
+                  // Define se existem botões para serem mostrados
+                  const temBotoes = ag.status === 'Pendente';
+
+                  return (
+                    <li key={ag.idAgendamento} style={{ 
+                        borderLeft: `4px solid ${ag.status === 'Concluído' ? '#2a9d8f' : '#0069ff'}`,
+                        display: 'flex',
+                        flexDirection: 'row',
+                        justifyContent: 'space-between', 
+                        alignItems: 'flex-start', 
+                        gap: '20px'
+                    }}>
+                        
+                        {/* === COLUNA DA ESQUERDA === */}
+                        <div style={{ flex: 1 }}>
+                            <strong style={{ fontSize: '1.3em', display: 'block', marginBottom: '10px' }}>
+                                {ag.servicos.join(', ')}
+                            </strong>
+
+                            <div style={{ color: '#ccc', fontSize: '14px', marginBottom: '15px' }}>
+                                <p style={{ marginBottom: '5px' }}>
+                                    📅 {new Date(ag.dataHora).toLocaleDateString('pt-BR')} às {new Date(ag.dataHora).toLocaleTimeString('pt-BR', {hour: '2-digit', minute:'2-digit'})}
+                                </p>
+                                <p style={{ margin: 0 }}>
+                                    ✂️ Profissional: <span style={{ color: '#fff' }}>{ag.nomeProfissional}</span>
+                                </p>
+                            </div>
+                        </div>
+
+                        {/* === COLUNA DA DIREITA === */}
+                        <div style={{ 
+                            display: 'flex', 
+                            flexDirection: 'column', 
+                            alignItems: 'flex-end', 
+                            gap: '10px',
+                            minWidth: '160px',
+                            
+                            // Se NÃO tem botões (Concluído/Cancelado), centraliza o Status verticalmente
+                            alignSelf: temBotoes ? 'auto' : 'stretch', 
+                            justifyContent: temBotoes ? 'flex-start' : 'center'
+                        }}>
+                            {/* STATUS */}
+                            <span style={{
+                                padding: '10px 16px', 
+                                borderRadius: '8px', 
+                                fontSize: '14px',    
+                                fontWeight: 'bold',
+                                textAlign: 'center',
+                                width: '100%',   
+                                boxSizing: 'border-box',
+                                backgroundColor: ag.status === 'Concluído' ? '#2a4d2a' : ag.status === 'Cancelado' ? '#4d2626' : '#444',
+                                color: ag.status === 'Concluído' ? '#9aff9a' : ag.status === 'Cancelado' ? '#ff8a80' : '#fff', 
+                                border: ag.status === 'Pendente' ? '1px solid #666' : 'none'
+                            }}>
+                                {ag.status}
+                            </span>
+
+                            {/* BOTÃO VINCULAR (Agora só aparece se for Pendente) */}
+                            {ag.status === 'Pendente' && (
+                                <button 
+                                    onClick={() => handleVincularGoogle(ag)}
+                                    style={{ 
+                                        padding: '10px 16px', 
+                                        width: '100%', 
+                                        boxSizing: 'border-box',
+                                        backgroundColor: '#0069ff', 
+                                        color: '#fff', 
+                                        border: 'none', 
+                                        borderRadius: '8px', 
+                                        cursor: 'pointer', 
+                                        fontSize: '13px',
+                                        fontWeight: 'bold',
+                                        display: 'flex',
+                                        alignItems: 'center',
+                                        justifyContent: 'center',
+                                        gap: '6px',
+                                        transition: 'filter 0.2s'
+                                    }}
+                                    onMouseOver={(e) => { e.target.style.filter = 'brightness(1.1)'; }}
+                                    onMouseOut={(e) => { e.target.style.filter = 'brightness(1.0)'; }}
+                                >
+                                    📅 Vincular
+                                </button>
+                            )}
+
+                            {/* BOTÃO CANCELAR (Só se for Pendente) */}
+                            {ag.status === 'Pendente' && (
+                                <button onClick={() => handleCancelar(ag.idAgendamento)}
+                                        style={{ 
+                                            padding: '10px 16px', 
+                                            width: '100%',        
+                                            boxSizing: 'border-box',
+                                            backgroundColor: '#e76f51', 
+                                            color: 'white', 
+                                            border: 'none', 
+                                            borderRadius: '8px', 
+                                            cursor: 'pointer', 
+                                            fontWeight: 'bold',
+                                            fontSize: '13px',
+                                            transition: 'filter 0.2s'
+                                        }}
+                                        onMouseOver={(e) => { e.target.style.filter = 'brightness(1.1)'; }}
+                                        onMouseOut={(e) => { e.target.style.filter = 'brightness(1.0)'; }}
+                                >
+                                    ❌ Cancelar
+                                </button>
+                            )}
+                        </div>
+                    </li>
+                  );
+              })}
           </ul>
       );
   }
 
-  // Decide o que mostrar na área principal
   function renderizarConteudoPrincipal() {
+      
+      if (abaAtiva === 'meus_agendamentos') {
+          return (
+              <div className="content-card">
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px' }}>
+                      <h2 className="titulo-login" style={{ margin: 0 }}>Meus Agendamentos</h2>
+                      <button 
+                          className="botao-login" 
+                          style={{ marginTop: 0, padding: '8px 16px', fontSize: '14px' }}
+                          onClick={() => setAbaAtiva('novo')}
+                      >
+                          + Novo
+                      </button>
+                  </div>
+                  {renderizarListaMeusAgendamentos()}
+              </div>
+          );
+      }
       
       if (abaAtiva === 'novo') {
           return (
-              <div className="content-card"> 
+              <div className="content-card" style={{ maxWidth: '600px', margin: '0 auto' }}> 
                   <FormNovoAgendamento 
                       onAgendamentoSucesso={handleSucessoAgendamento} 
-                      dataInicial={dataClicada}
                   />
-              </div>
-          );
-      }
-      
-      if (abaAtiva === 'calendario') {
-          return (
-              <div className="content-card">
-                  <p style={{textAlign: 'center', color: '#aaa', marginTop: '-15px', marginBottom: '20px'}}>
-                      Clique em um horário vago no calendário para agendar.
-                  </p>
-                  <AgendaCalendario 
-                      key={refreshKey} 
-                      onDateClick={handleDateClick}
-                  />
-              </div>
-          );
-      }
-      
-      if (abaAtiva === 'gerenciar') {
-          return (
-              <div className="content-card">
-                  <h2 className="titulo-login" style={{ marginTop: 0 }}>Gerenciar meus Agendamentos</h2>
-                  {renderizarGerenciamento()}
+                  <button 
+                      className="botao-secundario" 
+                      style={{ width: '100%', marginTop: '10px' }}
+                      onClick={() => setAbaAtiva('meus_agendamentos')}
+                  >
+                      Cancelar
+                  </button>
               </div>
           );
       }
@@ -161,17 +243,13 @@ function DashboardCliente() {
                 ✂️ <span className="sidebar-logo-text">Agenda.Fácil</span>
             </div>
             <ul className="sidebar-menu">
-                <li className={`sidebar-item ${abaAtiva === 'calendario' ? 'active' : ''}`}
-                    onClick={() => setAbaAtiva('calendario')}>
+                <li className={`sidebar-item ${abaAtiva === 'meus_agendamentos' ? 'active' : ''}`}
+                    onClick={() => setAbaAtiva('meus_agendamentos')}>
                     📅 <span className="sidebar-item-text">Meus Agendamentos</span>
                 </li>
                 <li className={`sidebar-item ${abaAtiva === 'novo' ? 'active' : ''}`}
                     onClick={() => setAbaAtiva('novo')}>
                     ➕ <span className="sidebar-item-text">Novo Agendamento</span>
-                </li>
-                <li className={`sidebar-item ${abaAtiva === 'gerenciar' ? 'active' : ''}`}
-                    onClick={() => setAbaAtiva('gerenciar')}>
-                    📋 <span className="sidebar-item-text">Gerenciar / Cancelar</span>
                 </li>
             </ul>
 
@@ -184,9 +262,7 @@ function DashboardCliente() {
         <main className="admin-content">
             <header className="admin-header">
                 <h2>
-                    {abaAtiva === 'novo' ? 'Fazer Agendamento' : 
-                     abaAtiva === 'calendario' ? 'Meus Agendamentos' : 
-                     'Gerenciar Agendamentos'}
+                    {abaAtiva === 'novo' ? 'Fazer Agendamento' : 'Painel do Cliente'}
                 </h2>
                 <span style={{ color: '#aaa' }}>Olá, Cliente!</span>
             </header>
