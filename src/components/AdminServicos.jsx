@@ -5,6 +5,7 @@ import axios from 'axios'; // Importa o Axios para API
 /**
  * Este componente agora controla a tela INTEIRA de Serviços.
  * Ele alterna entre o modo "Lista" e o modo "Formulário".
+ * (Refatorado no Passo 4.1)
  */
 function AdminServicos() {
     
@@ -20,16 +21,10 @@ function AdminServicos() {
     // Estados de Feedback e Controle
     const [carregando, setCarregando] = useState(false);
     const [editandoId, setEditandoId] = useState(null); // Guarda o ID do serviço em edição
-
-    // === MUDANÇA 1 (NOVO ESTADO) ===
-    // Novo estado para controlar a visualização
-    // 'lista' = mostra o catálogo
-    // 'formulario' = mostra o formulário de criar/editar
-    const [modo, setModo] = useState('lista');
+    const [modo, setModo] = useState('lista'); // 'lista' ou 'formulario'
 
     /**
      * Efeito (useEffect) que roda UMA VEZ quando o componente carrega.
-     * Objetivo: Buscar a lista de serviços na API.
      */
     useEffect(() => {
         buscarServicos();
@@ -37,51 +32,45 @@ function AdminServicos() {
 
     /**
      * Função que busca os serviços ATIVOS na API.
+     * (Otimizamos removendo a URL hardcoded no Passo 6.x)
      */
     async function buscarServicos() {
         try {
-            const resposta = await axios.get("/servicos");
+            const resposta = await axios.get("/servicos"); // URL relativa
             setServicos(resposta.data);
         } catch (error) {
             console.error("Erro ao buscar serviços:", error);
         }
     }
 
-    // --- MUDANÇA 2 (FUNÇÕES DE CONTROLE DE MODO) ---
+    // --- Funções de Controle de Modo (do Passo 4.1) ---
 
     /**
      * Função chamada ao clicar em "Editar" em um item da lista.
-     * Preenche o formulário e muda para o modo 'formulario'.
      */
     function handleEditarClick(servico) {
-        setEditandoId(servico.id); // Marca qual serviço estamos editando
-        // Preenche os estados do formulário com os dados do serviço clicado
+        setEditandoId(servico.id); 
         setNome(servico.nome);
         setDescricao(servico.descricao);
         setPreco(servico.preco);
         setDuracao(servico.duracaoMinutos);
-        // Muda a tela para o modo formulário
-        setModo('formulario');
+        setModo('formulario'); // Muda a tela
     }
 
     /**
      * Função chamada ao clicar em "Cancelar" no formulário.
-     * Limpa os campos e volta para o modo 'lista'.
      */
     function handleCancelarEdicao() {
-        setEditandoId(null); // Limpa o ID em edição
-        // Limpa os campos do formulário
+        setEditandoId(null); 
         setNome("");
         setDescricao("");
         setPreco("");
         setDuracao("");
-        // Volta para a tela da lista
-        setModo('lista');
+        setModo('lista'); // Volta para a lista
     }
 
     /**
      * Função chamada ao clicar em "+ Novo Serviço".
-     * Limpa os campos (garante que não é edição) e muda para o modo 'formulario'.
      */
     function handleNovoClick() {
         setEditandoId(null);
@@ -89,14 +78,14 @@ function AdminServicos() {
         setDescricao("");
         setPreco("");
         setDuracao("");
-        setModo('formulario');
+        setModo('formulario'); // Muda a tela
     }
 
     /**
      * Função chamada ao salvar (Criar ou Editar) no formulário.
      */
     async function handleSubmit(e) {
-        e.preventDefault(); // Impede o recarregamento da página
+        e.preventDefault(); 
         setCarregando(true);
         
         const dadosServico = {
@@ -104,21 +93,21 @@ function AdminServicos() {
             descricao,
             preco: parseFloat(preco),
             duracaoMinutos: parseInt(duracao),
-            ativo: true // Sempre salva como ativo
+            ativo: true 
         };
 
         try {
             if (editandoId) {
                 // MODO EDIÇÃO (PUT)
-                await axios.put(`/servicos/${editandoId}`, dadosServico);
+                await axios.put(`/servicos/${editandoId}`, dadosServico); // URL relativa
                 alert("Serviço atualizado com sucesso!");
             } else {
                 // MODO CRIAÇÃO (POST)
-                await axios.post("/servicos", dadosServico);
+                await axios.post("/servicos", dadosServico); // URL relativa
                 alert("Serviço criado com sucesso!");
             }
             
-            buscarServicos(); // Recarrega a lista de serviços
+            buscarServicos(); // Recarrega a lista
             handleCancelarEdicao(); // Limpa o form e VOLTA PARA A LISTA
 
         } catch (error) {
@@ -133,23 +122,26 @@ function AdminServicos() {
      * Função chamada ao clicar em "Excluir" (Desativar) em um item da lista.
      */
     async function handleDeletar(id, nomeServico) {
-        if (!confirm(`Tem certeza que deseja excluir o serviço "${nomeServico}"?\nIsso vai marcá-lo como 'Inativo' e sumir das novas agendas.`)) return;
+        if (!confirm(`Tem certeza que deseja desativar o serviço "${nomeServico}"?\nIsso o tornará indisponível para novos agendamentos.`)) return;
+        
         try {
             // Chama o DELETE (que no backend faz um "soft delete" - seta ativo=false)
-            await axios.delete(`/servicos/${id}`);
-            alert("Serviço marcado como inativo!");
+            await axios.delete(`/servicos/${id}`); // URL relativa
+            alert("Serviço desativado com sucesso!");
             buscarServicos(); // Recarrega a lista (o item sumirá)
+            
+        // === NOSSA ALTERAÇÃO DESTE PASSO ESTÁ AQUI ===
         } catch (error) {
-             if (error.response && error.response.status === 409) {
-                alert("Não é possível excluir este serviço pois ele já foi usado em agendamentos.\n\nSugestão: Edite o nome dele para 'INATIVO - " + nomeServico + "' se não quiser mais usá-lo.");
-            } else {
-                alert("Não foi possível excluir o serviço.");
-            }
+            // O 'soft delete' (setar ativo=false) NUNCA vai dar erro 409 (Conflito).
+            // O único erro provável aqui é um 403 (Token venceu) ou 500 (API caiu).
+            // Removemos o 'if (error.response.status === 409)'
+            // porque ele estava baseado numa premissa errada.
+            console.error("Erro ao desativar serviço:", error);
+            alert("Não foi possível desativar o serviço. Tente novamente.");
         }
     }
 
-    // --- MUDANÇA 3 (RENDERIZAÇÃO CONDICIONAL) ---
-    // Agora o 'return' decide qual "tela" (modo) mostrar.
+    // --- Renderização Condicional (do Passo 4.1) ---
 
     /**
      * SE o modo for 'lista', renderiza o Catálogo (Lista)
@@ -166,19 +158,18 @@ function AdminServicos() {
                 }}>
                     <h2 className="titulo-login" style={{ marginTop: 0, marginBottom: 0 }}>Catálogo de Serviços</h2>
                     
-                    {/* O novo botão "+ Novo Serviço" */}
                     <button 
                         className="botao-login" 
                         style={{ marginTop: 0, padding: '10px 15px', fontSize: '15px' }} 
-                        onClick={handleNovoClick} // Chama a função que limpa e muda para o modo formulário
+                        onClick={handleNovoClick} 
                     >
                         + Novo Serviço
                     </button>
                 </div>
 
-                {/* A Lista de Serviços (que antes ficava na coluna da direita) */}
+                {/* A Lista de Serviços */}
                 <ul className="lista-agendamentos">
-                    {/* Filtramos para mostrar apenas serviços ATIVOS na lista de edição */}
+                    {/* Filtramos para mostrar apenas serviços ATIVOS */}
                     {servicos.filter(s => s.ativo).map(servico => (
                         <li key={servico.id} style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }}>
                             <div>
@@ -195,15 +186,14 @@ function AdminServicos() {
                             </div>
                             
                             <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
-                                {/* Botão Editar agora chama a função 'handleEditarClick' */}
                                 <button onClick={() => handleEditarClick(servico)}
                                         style={{ backgroundColor: '#0069ff33', color: '#0069ff', border: '1px solid #0069ff', padding: '6px 12px', borderRadius: '6px', cursor: 'pointer', fontSize: '13px' }}>
                                     Editar
                                 </button>
-                                {/* Botão Excluir */}
+                                {/* Botão Excluir/Desativar */}
                                 <button onClick={() => handleDeletar(servico.id, servico.nome)}
                                         style={{ backgroundColor: '#4d2626', color: '#ff8a80', border: '1px solid #ff8a80', padding: '6px 12px', borderRadius: '6px', cursor: 'pointer', fontSize: '13px' }}>
-                                    Excluir
+                                    Desativar
                                 </button>
                             </div>
                         </li>
@@ -219,12 +209,10 @@ function AdminServicos() {
     if (modo === 'formulario') {
         return (
             <div className="content-card" style={{ maxWidth: '700px', margin: '0 auto' }}>
-                {/* Título do Formulário (muda se for edição ou criação) */}
                 <h2 className="titulo-login" style={{ marginTop: 0 }}>
                     {editandoId ? `Editando: ${nome}` : 'Novo Serviço'}
                 </h2>
                 
-                {/* O Formulário (que antes ficava na coluna da esquerda) */}
                 <form onSubmit={handleSubmit} className="formulario-login">
                     <div className="input-grupo">
                         <label>Nome do Serviço</label>
@@ -245,7 +233,6 @@ function AdminServicos() {
                         </div>
                     </div>
 
-                    {/* Botões de Ação do Formulário */}
                     <div style={{ marginTop: '20px', display: 'flex', gap: '10px' }}>
                         <button 
                             type="submit" 
@@ -256,7 +243,6 @@ function AdminServicos() {
                             {carregando ? 'Salvando...' : (editandoId ? 'Salvar Alterações' : 'Adicionar Serviço')}
                         </button>
                         
-                        {/* Botão Cancelar (agora chama a função que volta pra lista) */}
                         <button 
                             type="button" 
                             onClick={handleCancelarEdicao} 
@@ -271,7 +257,6 @@ function AdminServicos() {
         );
     }
 
-    // (Se nenhum modo for encontrado, não retorna nada)
     return null;
 }
 
