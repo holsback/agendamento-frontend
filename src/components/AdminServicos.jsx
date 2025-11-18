@@ -40,7 +40,7 @@ function AdminServicos() {
      */
     async function buscarServicos() {
         try {
-            const resposta = await axios.get("http://localhost:8080/servicos");
+            const resposta = await axios.get("/servicos");
             setServicos(resposta.data);
         } catch (error) {
             console.error("Erro ao buscar serviços:", error);
@@ -110,11 +110,11 @@ function AdminServicos() {
         try {
             if (editandoId) {
                 // MODO EDIÇÃO (PUT)
-                await axios.put(`http://localhost:8080/servicos/${editandoId}`, dadosServico);
+                await axios.put(`/servicos/${editandoId}`, dadosServico);
                 alert("Serviço atualizado com sucesso!");
             } else {
                 // MODO CRIAÇÃO (POST)
-                await axios.post("http://localhost:8080/servicos", dadosServico);
+                await axios.post("/servicos", dadosServico);
                 alert("Serviço criado com sucesso!");
             }
             
@@ -136,7 +136,7 @@ function AdminServicos() {
         if (!confirm(`Tem certeza que deseja excluir o serviço "${nomeServico}"?\nIsso vai marcá-lo como 'Inativo' e sumir das novas agendas.`)) return;
         try {
             // Chama o DELETE (que no backend faz um "soft delete" - seta ativo=false)
-            await axios.delete(`http://localhost:8080/servicos/${id}`);
+            await axios.delete(`/servicos/${id}`);
             alert("Serviço marcado como inativo!");
             buscarServicos(); // Recarrega a lista (o item sumirá)
         } catch (error) {

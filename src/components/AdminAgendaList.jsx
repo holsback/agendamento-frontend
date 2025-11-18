@@ -16,7 +16,7 @@ function AdminAgendaList() {
   async function buscarAgendaGeral() {
     setCarregando(true);
     try {
-      const resposta = await axios.get("http://localhost:8080/agendamentos");
+      const resposta = await axios.get("/agendamentos");
       setAgendamentos(resposta.data);
       setErro("");
     } catch (erroApi) {
@@ -36,7 +36,7 @@ function AdminAgendaList() {
   async function atualizarStatus(idAgendamento, novoStatus) {
       if (!confirm(`ADMIN: Tem certeza que deseja marcar este agendamento como ${novoStatus}?`)) return;
       try {
-          await axios.patch(`http://localhost:8080/agendamentos/${idAgendamento}/status`, {
+          await axios.patch(`/agendamentos/${idAgendamento}/status`, {
               status: novoStatus
           });
           buscarAgendaGeral(); // Recarrega a lista

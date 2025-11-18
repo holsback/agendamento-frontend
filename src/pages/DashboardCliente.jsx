@@ -32,7 +32,7 @@ function DashboardCliente() {
   async function buscarMeusAgendamentos() {
       setCarregandoLista(true);
       try {
-          const resposta = await axios.get("http://localhost:8080/agendamentos"); 
+          const resposta = await axios.get("/agendamentos"); 
           setMeusAgendamentos(resposta.data);
       } catch (error) {
           console.error("Erro ao buscar meus agendamentos:", error);
@@ -62,7 +62,7 @@ function DashboardCliente() {
       if (!confirm("Tem certeza que deseja cancelar este agendamento?")) return;
       
       try {
-          await axios.patch(`http://localhost:8080/agendamentos/${id}/status`, {
+          await axios.patch(`/agendamentos/${id}/status`, {
               status: "Cancelado"
           });
           alert("Agendamento cancelado!");

@@ -24,7 +24,7 @@ function FormConfiguracao() {
 
     async function carregarConfiguracao() {
         try {
-            const resposta = await axios.get("http://localhost:8080/configuracao");
+            const resposta = await axios.get("/configuracao");
             setInicio(resposta.data.inicioExpediente);
             setFim(resposta.data.fimExpediente);
             setDiasSelecionados(resposta.data.diasFuncionamento);
@@ -48,7 +48,7 @@ function FormConfiguracao() {
         setMensagem({ texto: "", tipo: "" });
 
         try {
-            await axios.put("http://localhost:8080/configuracao", {
+            await axios.put("/configuracao", {
                 inicioExpediente: inicio,
                 fimExpediente: fim,
                 diasFuncionamento: diasSelecionados

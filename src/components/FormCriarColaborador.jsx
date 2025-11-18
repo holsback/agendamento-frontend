@@ -130,7 +130,7 @@ function FormCriarColaborador({ onColaboradorCriado, colaboradorParaEditar, onCa
             perfil: perfilSelecionado ? perfilSelecionado.value : null,
             senha: senha || null 
           };
-          await axios.put(`http://localhost:8080/admin/atualizar-colaborador/${colaboradorParaEditar.id}`, dadosAtualizados);
+          await axios.put(`/admin/atualizar-colaborador/${colaboradorParaEditar.id}`, dadosAtualizados);
           setSucesso(`Colaborador ${nome} atualizado com sucesso!`);
           
           // === NOSSA ALTERAÇÃO DESTE PASSO ESTÁ AQUI ===
@@ -146,7 +146,7 @@ function FormCriarColaborador({ onColaboradorCriado, colaboradorParaEditar, onCa
               return;
           }
           
-          await axios.post("http://localhost:8080/admin/criar-colaborador", {
+          await axios.post("/admin/criar-colaborador", {
             nome: nome,
             email: email,
             telefone: telefoneLimpo,

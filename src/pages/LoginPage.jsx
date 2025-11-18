@@ -26,7 +26,7 @@ function LoginPage() {
 
     try {
       const resposta = await axios.post(
-        "http://localhost:8080/auth/login", 
+        "/auth/login", 
         {
           email: email, 
           senha: senha 

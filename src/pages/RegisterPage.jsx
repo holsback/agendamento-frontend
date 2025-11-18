@@ -37,7 +37,7 @@ function RegisterPage() {
 
     try {
       // Faz a chamada (POST) para a API, agora enviando o telefone JÁ LIMPO
-      const resposta = await axios.post("http://localhost:8080/auth/registrar", {
+      const resposta = await axios.post("/auth/registrar", {
         nome: nome,
         email: email,
         telefone: telefoneLimpo, // <-- MUDANÇA

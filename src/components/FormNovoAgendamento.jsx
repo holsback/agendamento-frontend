@@ -52,8 +52,8 @@ function FormNovoAgendamento({ onAgendamentoSucesso }) {
     async function carregarDados() {
         try {
             const [resProfissionais, resServicos] = await Promise.all([
-                axios.get("http://localhost:8080/usuarios/profissionais"),
-                axios.get("http://localhost:8080/servicos")
+                axios.get("/usuarios/profissionais"),
+                axios.get("/servicos")
             ]);
             setListaProfissionais(resProfissionais.data.map(p => ({ value: p.id, label: p.nome })));
             setListaServicos(resServicos.data.map(s => ({ 
@@ -100,7 +100,7 @@ function FormNovoAgendamento({ onAgendamentoSucesso }) {
         async function buscarDisponibilidade() {
             setCarregandoHorarios(true);
             try {
-                const resposta = await axios.get(`http://localhost:8080/usuarios/${profissionalSelecionado.value}/disponibilidade`, {
+                const resposta = await axios.get(`/usuarios/${profissionalSelecionado.value}/disponibilidade`, {
                     params: {
                         data: diaSelecionado, // ex: "2025-11-12"
                         duracao: duracaoTotal // ex: 90
@@ -135,7 +135,7 @@ function FormNovoAgendamento({ onAgendamentoSucesso }) {
         servicosIds: listaIds,
         dataHora: dataHoraFormatada // Envia a data/hora combinada
       };
-      await axios.post("http://localhost:8080/agendamentos", novoAgendamentoDTO);
+      await axios.post("/agendamentos", novoAgendamentoDTO);
 
       setSucesso("Agendamento criado com sucesso!");
       

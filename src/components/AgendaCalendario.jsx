@@ -19,8 +19,8 @@ function AgendaCalendario({ onDateClick, key }) {
             try {
                 // 1. Busca os dados (Backend agora envia TODOS, incluindo Cancelados)
                 const [respostaEventos, respostaConfig] = await Promise.all([
-                    axios.get("http://localhost:8080/agendamentos"),
-                    axios.get("http://localhost:8080/configuracao")
+                    axios.get("/agendamentos"),
+                    axios.get("/configuracao")
                 ]);
 
                 // 2. Filtra aqui, no Frontend

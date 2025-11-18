@@ -55,7 +55,7 @@ function DashboardAdmin() {
     async function buscarColaboradores() {
       setCarregando(true);
       try {
-        const resposta = await axios.get("http://localhost:8080/admin/listar-colaboradores");
+        const resposta = await axios.get("/admin/listar-colaboradores");
         setColaboradores(resposta.data); setErro("");
       } catch (erroApi) {
         console.error("Erro ao listar:", erroApi); setErro("Não foi possível carregar a equipe.");
@@ -70,7 +70,7 @@ function DashboardAdmin() {
     async function deletarColaborador(id, nome) {
       if (!confirm(`Tem certeza que deseja deletar ${nome}?`)) return;
       try {
-          await axios.delete(`http://localhost:8080/admin/deletar-colaborador/${id}`);
+          await axios.delete(`/admin/deletar-colaborador/${id}`);
           alert("Colaborador deletado!"); 
           buscarColaboradores(); 
       } catch (erroApi) {
