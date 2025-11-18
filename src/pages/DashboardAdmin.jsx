@@ -1,40 +1,60 @@
-import '../App.css';
-import { useState, useEffect } from 'react';
-import axios from 'axios';
-import { useNavigate } from 'react-router-dom';
+import '../App.css'; // Importa o CSS
+import { useState, useEffect } from 'react'; // Importa "ganchos" do React
+import axios from 'axios'; // Importa Axios para API
+import { useNavigate } from 'react-router-dom'; // Importa hook de navegação
+// Importa os Componentes "filhos" que este Dashboard usa
 import FormCriarColaborador from '../components/FormCriarColaborador';
 import AdminAgendaList from '../components/AdminAgendaList';
 import FormConfiguracao from '../components/FormConfiguracao';
 import AdminServicos from '../components/AdminServicos';
 import AgendaCalendario from '../components/AgendaCalendario';
 
+// Componente (React) para o ícone de seta (usado no botão de recolher)
 const IconeSeta = () => (
     <svg width="10" height="10" viewBox="0 0 6 10" fill="none" xmlns="http://www.w3.org/2000/svg" style={{ display: 'block' }}>
         <path d="M5 1L1 5L5 9" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
     </svg>
 );
 
+/**
+ * Esta é a Página Principal (Componente "Pai") do Dashboard do Admin
+ */
 function DashboardAdmin() {
-  const [colaboradores, setColaboradores] = useState([]);
-  const [carregando, setCarregando] = useState(true);
-  const [erro, setErro] = useState("");
-  const [abaAtiva, setAbaAtiva] = useState('agenda');
-  const [subAbaAgenda, setSubAbaAgenda] = useState('calendario');
-  const [colaboradorEmEdicao, setColaboradorEmEdicao] = useState(null);
+  
+  // --- Estados (Memória) do Componente ---
+  const [colaboradores, setColaboradores] = useState([]); 
+  const [carregando, setCarregando] = useState(true); 
+  const [erro, setErro] = useState(""); 
+  const [abaAtiva, setAbaAtiva] = useState('agenda'); 
+
+  // Estado da sub-aba (Alteração do Passo 2.1: 'lista' é o padrão)
+  const [subAbaAgenda, setSubAbaAgenda] = useState('lista'); 
+  
+  const [colaboradorEmEdicao, setColaboradorEmEdicao] = useState(null); 
+
+  // Estado da sidebar (Alteração do Passo 1: 'false' é o padrão)
   const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(false);
   
-  const navegar = useNavigate();
+  const navegar = useNavigate(); // Função para forçar a mudança de página
 
+  /**
+   * Função para deslogar o usuário.
+   */
   function handleLogout() {
       localStorage.removeItem("authToken");
       delete axios.defaults.headers.common['Authorization'];
       navegar("/");
   }
 
+    // Objeto para "traduzir" os nomes das ROLES
     const nomesPerfis = {
       "ROLE_MASTER": "Master", "ROLE_DONO": "Dono", "ROLE_GERENTE": "Gerente",
       "ROLE_PROFISSIONAL": "Profissional", "ROLE_CLIENTE": "Cliente"
     };
+
+    /**
+     * Função que busca na API a lista de colaboradores (membros da equipe).
+     */
     async function buscarColaboradores() {
       setCarregando(true);
       try {
@@ -46,23 +66,44 @@ function DashboardAdmin() {
         setCarregando(false);
       }
     }
+
+    /**
+     * Função para deletar um colaborador pelo ID.
+     */
     async function deletarColaborador(id, nome) {
       if (!confirm(`Tem certeza que deseja deletar ${nome}?`)) return;
       try {
           await axios.delete(`http://localhost:8080/admin/deletar-colaborador/${id}`);
-          alert("Colaborador deletado!"); buscarColaboradores();
+          alert("Colaborador deletado!"); 
+          buscarColaboradores(); // Recarrega a lista
       } catch (erroApi) {
           alert("Erro ao deletar (verifique se ele não tem agendamentos vinculados).");
       }
     }
-    useEffect(() => { buscarColaboradores(); }, []);
+
+    /**
+     * Efeito (useEffect) que roda UMA VEZ quando a página carrega.
+     */
+    useEffect(() => { 
+        buscarColaboradores(); 
+    }, []); // Array vazio [] = roda só uma vez
+
+    /**
+     * Função "Callback" que é passada para o FormCriarColaborador.
+     */
     function handleSucessoEquipe() {
-        buscarColaboradores(); setColaboradorEmEdicao(null); 
+        buscarColaboradores(); // Recarrega a lista
+        setColaboradorEmEdicao(null); // Limpa o modo de edição
     }
+
+    /**
+     * Função que renderiza (desenha) a lista de membros na aba "Equipe".
+     */
     function renderizarListaMembros() {
         if (carregando) return <p>Carregando equipe...</p>;
         if (erro) return <p className="mensagem-erro">{erro}</p>;
         if (colaboradores.length === 0) return <p>Nenhum membro encontrado.</p>;
+        
         return (
             <ul className="lista-agendamentos">
                 {colaboradores.map(colab => (
@@ -91,46 +132,58 @@ function DashboardAdmin() {
         );
     }
 
+  /**
+   * Função principal que decide qual CONTEÚDO mostrar na área da direita.
+   */
   function renderizarConteudoPrincipal() {
       
       // 1. ABA AGENDA GERAL
       if (abaAtiva === 'agenda') {
           return (
               <div className="content-card">
-                  {/* Container das Sub-Abas */}
+                  
+                  {/* === NOSSA ALTERAÇÃO DESTE PASSO ESTÁ AQUI === */}
+                  {/* Invertemos a ordem dos dois blocos <div> abaixo */}
                   <div className="sub-abas-container">
-                      <div 
-                          className={`sub-aba ${subAbaAgenda === 'calendario' ? 'active' : ''}`}
-                          onClick={() => setSubAbaAgenda('calendario')}
-                      >
-                          Visão (Calendário)
-                      </div>
+                      {/* O Gerenciar (Lista) agora vem primeiro no código HTML */}
                       <div 
                           className={`sub-aba ${subAbaAgenda === 'lista' ? 'active' : ''}`}
                           onClick={() => setSubAbaAgenda('lista')}
                       >
                           Gerenciar (Lista)
                       </div>
+                      {/* O Visão (Calendário) agora vem depois */}
+                      <div 
+                          className={`sub-aba ${subAbaAgenda === 'calendario' ? 'active' : ''}`}
+                          onClick={() => setSubAbaAgenda('calendario')}
+                      >
+                          Visão (Calendário)
+                      </div>
                   </div>
+                  {/* --- FIM DA ALTERAÇÃO --- */}
+
                   
-                  {/* Conteúdo da Sub-Aba */}
+                  {/* A lógica de qual componente mostrar continua a mesma */}
+                  {/* Como 'subAbaAgenda' começa como 'lista', <AdminAgendaList /> será mostrado */}
                   {subAbaAgenda === 'calendario' ? <AgendaCalendario /> : <AdminAgendaList />}
               </div>
           );
       
-      // 2. ABA GESTÃO DE EQUIPE
+      // 2. ABA GESTÃO DE EQUIPE (Layout de 2 colunas)
       } else if (abaAtiva === 'equipe') {
           return (
               <div style={{ display: 'flex', gap: '30px', flexDirection: 'row', flexWrap: 'wrap' }}>
+                  {/* Coluna da Esquerda: Formulário */}
                   <div style={{ flex: 1, minWidth: '300px' }}>
                       <div className="content-card">
                           <FormCriarColaborador 
                               onColaboradorCriado={handleSucessoEquipe} 
-                              colaboradorParaEditar={colaboradorEmEdicao}
-                              onCancelarEdicao={() => setColaboradorEmEdicao(null)}
+                              colaboradorParaEditar={colaboradorEmEdicao} 
+                              onCancelarEdicao={() => setColaboradorEmEdicao(null)} 
                           />
                       </div>
                   </div>
+                  {/* Coluna da Direita: Lista */}
                   <div style={{ flex: 1.5, minWidth: '300px' }}>
                       <div className="content-card">
                           <h2 className="titulo-login" style={{ marginTop: 0 }}>Lista de Membros</h2>
@@ -150,9 +203,10 @@ function DashboardAdmin() {
       }
   }
 
+  // --- Renderização (HTML) da página ---
   return (
     <div className="admin-container">
-      {/* SIDEBAR */}
+      {/* SIDEBAR (Barra Lateral Esquerda) */}
       <aside className={`admin-sidebar ${isSidebarCollapsed ? 'collapsed' : ''}`}>
           
           <button 
@@ -166,6 +220,7 @@ function DashboardAdmin() {
              ✂️ <span className="sidebar-logo-text">Agenda.Fácil</span>
           </div>
 
+          {/* Menu de Navegação Principal */}
           <ul className="sidebar-menu">
               <li className={`sidebar-item ${abaAtiva === 'agenda' ? 'active' : ''}`}
                   onClick={() => setAbaAtiva('agenda')}>
@@ -193,8 +248,9 @@ function DashboardAdmin() {
 
       </aside>
 
-      {/* CONTEÚDO PRINCIPAL */}
+      {/* CONTEÚDO PRINCIPAL (Área da Direita) */}
       <main className="admin-content">
+          {/* Cabeçalho */}
           <header className="admin-header">
               <h2>
                   {abaAtiva === 'agenda' ? 'Agenda Geral' : 
@@ -208,6 +264,7 @@ function DashboardAdmin() {
               </div>
           </header>
 
+          {/* Renderiza o conteúdo da aba selecionada */}
           {renderizarConteudoPrincipal()}
       </main>
     </div>
