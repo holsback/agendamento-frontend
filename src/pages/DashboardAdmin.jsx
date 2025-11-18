@@ -1,15 +1,13 @@
-import '../App.css'; // Importa o CSS
-import { useState, useEffect } from 'react'; // Importa "ganchos" do React
-import axios from 'axios'; // Importa Axios para API
-import { useNavigate } from 'react-router-dom'; // Importa hook de navegação
-// Importa os Componentes "filhos" que este Dashboard usa
+import '../App.css'; 
+import { useState, useEffect } from 'react'; 
+import axios from 'axios'; 
+import { useNavigate } from 'react-router-dom';
 import FormCriarColaborador from '../components/FormCriarColaborador';
 import AdminAgendaList from '../components/AdminAgendaList';
 import FormConfiguracao from '../components/FormConfiguracao';
 import AdminServicos from '../components/AdminServicos';
 import AgendaCalendario from '../components/AgendaCalendario';
 
-// Componente (React) para o ícone de seta (usado no botão de recolher)
 const IconeSeta = () => (
     <svg width="10" height="10" viewBox="0 0 6 10" fill="none" xmlns="http://www.w3.org/2000/svg" style={{ display: 'block' }}>
         <path d="M5 1L1 5L5 9" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
@@ -26,16 +24,14 @@ function DashboardAdmin() {
   const [carregando, setCarregando] = useState(true); 
   const [erro, setErro] = useState(""); 
   const [abaAtiva, setAbaAtiva] = useState('agenda'); 
-
-  // Estado da sub-aba (Alteração do Passo 2.1: 'lista' é o padrão)
-  const [subAbaAgenda, setSubAbaAgenda] = useState('lista'); 
-  
+  const [subAbaAgenda, setSubAbaAgenda] = useState('lista'); // Padrão 'lista' (Passo 2.1)
   const [colaboradorEmEdicao, setColaboradorEmEdicao] = useState(null); 
-
-  // Estado da sidebar (Alteração do Passo 1: 'false' é o padrão)
-  const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(false);
+  const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(false); // Padrão 'false' (Passo 1)
   
-  const navegar = useNavigate(); // Função para forçar a mudança de página
+  // Estado para controlar a visualização da aba "Gestão de Equipe" (Passo 3.1)
+  const [modoEquipe, setModoEquipe] = useState('lista');
+  
+  const navegar = useNavigate(); 
 
   /**
    * Função para deslogar o usuário.
@@ -75,7 +71,7 @@ function DashboardAdmin() {
       try {
           await axios.delete(`http://localhost:8080/admin/deletar-colaborador/${id}`);
           alert("Colaborador deletado!"); 
-          buscarColaboradores(); // Recarrega a lista
+          buscarColaboradores(); 
       } catch (erroApi) {
           alert("Erro ao deletar (verifique se ele não tem agendamentos vinculados).");
       }
@@ -86,14 +82,18 @@ function DashboardAdmin() {
      */
     useEffect(() => { 
         buscarColaboradores(); 
-    }, []); // Array vazio [] = roda só uma vez
+    }, []); 
 
     /**
+     * === NOSSA ALTERAÇÃO DESTE PASSO ESTÁ AQUI ===
      * Função "Callback" que é passada para o FormCriarColaborador.
+     * Simplificamos ela: Removemos o parâmetro 'foiCriacao'.
+     * Agora ela SEMPRE recarrega a lista E volta para a tela da lista.
      */
     function handleSucessoEquipe() {
-        buscarColaboradores(); // Recarrega a lista
-        setColaboradorEmEdicao(null); // Limpa o modo de edição
+        buscarColaboradores(); // 1. Recarrega a lista de membros
+        setColaboradorEmEdicao(null); // 2. Limpa o modo de edição (para o form ficar limpo)
+        setModoEquipe('lista'); // 3. VOLTA PARA A TELA DA LISTA (SEMPRE)
     }
 
     /**
@@ -117,7 +117,8 @@ function DashboardAdmin() {
                             <p style={{ fontSize: '13px', color: '#aaa', margin: '0' }}>{colab.telefone}</p>
                         </div>
                         <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
-                            <button onClick={() => setColaboradorEmEdicao(colab)}
+                            {/* Ao clicar em Editar, seta os dados E MUDA O MODO para 'formulario' */}
+                            <button onClick={() => { setColaboradorEmEdicao(colab); setModoEquipe('formulario'); }}
                                     style={{ backgroundColor: '#0069ff33', color: '#0069ff', border: '1px solid #0069ff', padding: '6px 12px', borderRadius: '6px', cursor: 'pointer', fontSize: '13px' }}>
                                 Editar
                             </button>
@@ -133,26 +134,21 @@ function DashboardAdmin() {
     }
 
   /**
-   * Função principal que decide qual CONTEÚDO mostrar na área da direita.
+   * Função principal que decide qual CONTEÚDO mostrar.
    */
   function renderizarConteudoPrincipal() {
       
-      // 1. ABA AGENDA GERAL
+      // 1. ABA AGENDA GERAL (Invertemos as abas no Passo 2.2)
       if (abaAtiva === 'agenda') {
           return (
               <div className="content-card">
-                  
-                  {/* === NOSSA ALTERAÇÃO DESTE PASSO ESTÁ AQUI === */}
-                  {/* Invertemos a ordem dos dois blocos <div> abaixo */}
                   <div className="sub-abas-container">
-                      {/* O Gerenciar (Lista) agora vem primeiro no código HTML */}
                       <div 
                           className={`sub-aba ${subAbaAgenda === 'lista' ? 'active' : ''}`}
                           onClick={() => setSubAbaAgenda('lista')}
                       >
                           Gerenciar (Lista)
                       </div>
-                      {/* O Visão (Calendário) agora vem depois */}
                       <div 
                           className={`sub-aba ${subAbaAgenda === 'calendario' ? 'active' : ''}`}
                           onClick={() => setSubAbaAgenda('calendario')}
@@ -160,44 +156,65 @@ function DashboardAdmin() {
                           Visão (Calendário)
                       </div>
                   </div>
-                  {/* --- FIM DA ALTERAÇÃO --- */}
-
                   
-                  {/* A lógica de qual componente mostrar continua a mesma */}
-                  {/* Como 'subAbaAgenda' começa como 'lista', <AdminAgendaList /> será mostrado */}
                   {subAbaAgenda === 'calendario' ? <AgendaCalendario /> : <AdminAgendaList />}
               </div>
           );
       
-      // 2. ABA GESTÃO DE EQUIPE (Layout de 2 colunas)
+      // 2. ABA GESTÃO DE EQUIPE (Layout 'if/else' do Passo 3.1)
       } else if (abaAtiva === 'equipe') {
           return (
-              <div style={{ display: 'flex', gap: '30px', flexDirection: 'row', flexWrap: 'wrap' }}>
-                  {/* Coluna da Esquerda: Formulário */}
-                  <div style={{ flex: 1, minWidth: '300px' }}>
-                      <div className="content-card">
-                          <FormCriarColaborador 
-                              onColaboradorCriado={handleSucessoEquipe} 
-                              colaboradorParaEditar={colaboradorEmEdicao} 
-                              onCancelarEdicao={() => setColaboradorEmEdicao(null)} 
-                          />
-                      </div>
-                  </div>
-                  {/* Coluna da Direita: Lista */}
-                  <div style={{ flex: 1.5, minWidth: '300px' }}>
-                      <div className="content-card">
-                          <h2 className="titulo-login" style={{ marginTop: 0 }}>Lista de Membros</h2>
-                          {renderizarListaMembros()}
-                      </div>
-                  </div>
-              </div>
+            modoEquipe === 'lista' 
+            ? (
+                // --- SE 'modoEquipe' = 'lista', mostra a LISTA ---
+                <div className="content-card">
+                    {/* Header da Lista: Título + Novo Botão */}
+                    <div style={{ 
+                        display: 'flex', 
+                        justifyContent: 'space-between', 
+                        alignItems: 'center', 
+                        marginBottom: '20px' 
+                    }}>
+                        <h2 className="titulo-login" style={{ marginTop: 0, marginBottom: 0 }}>Lista de Membros</h2>
+                        
+                        {/* O novo botão "+ Novo Colaborador" */}
+                        <button 
+                            className="botao-login" 
+                            style={{ marginTop: 0, padding: '10px 15px', fontSize: '15px' }} 
+                            onClick={() => { 
+                                setColaboradorEmEdicao(null); 
+                                setModoEquipe('formulario'); 
+                            }}>
+                            + Novo Colaborador
+                        </button>
+                    </div>
+
+                    {/* A lista de membros */}
+                    {renderizarListaMembros()}
+                </div>
+            ) 
+            : (
+                // --- SE 'modoEquipe' = 'formulario', mostra o FORMULÁRIO ---
+                <div className="content-card" style={{ maxWidth: '700px', margin: '0 auto' }}> 
+                    <FormCriarColaborador 
+                        onColaboradorCriado={handleSucessoEquipe} // Passa a nova função simplificada
+                        colaboradorParaEditar={colaboradorEmEdicao} 
+                        
+                        // Ao Cancelar: Limpa o modo de edição E volta para a lista
+                        onCancelarEdicao={() => { 
+                            setColaboradorEmEdicao(null); 
+                            setModoEquipe('lista'); 
+                        }}
+                    />
+                </div>
+            )
           );
       
-      // 3. ABA SERVIÇOS
+      // 3. ABA SERVIÇOS (continua como estava)
       } else if (abaAtiva === 'servicos') {
            return <AdminServicos />;
       
-      // 4. ABA CONFIGURAÇÕES
+      // 4. ABA CONFIGURAÇÕES (continua como estava)
       } else if (abaAtiva === 'config') {
           return ( <div className="content-card"><FormConfiguracao /></div> );
       }
@@ -206,7 +223,7 @@ function DashboardAdmin() {
   // --- Renderização (HTML) da página ---
   return (
     <div className="admin-container">
-      {/* SIDEBAR (Barra Lateral Esquerda) */}
+      {/* SIDEBAR */}
       <aside className={`admin-sidebar ${isSidebarCollapsed ? 'collapsed' : ''}`}>
           
           <button 
@@ -220,7 +237,6 @@ function DashboardAdmin() {
              ✂️ <span className="sidebar-logo-text">Agenda.Fácil</span>
           </div>
 
-          {/* Menu de Navegação Principal */}
           <ul className="sidebar-menu">
               <li className={`sidebar-item ${abaAtiva === 'agenda' ? 'active' : ''}`}
                   onClick={() => setAbaAtiva('agenda')}>
@@ -240,7 +256,6 @@ function DashboardAdmin() {
               </li>
           </ul>
 
-          {/* Botão de Sair */}
           <div className="sidebar-logout" onClick={handleLogout}>
             <span style={{ transform: 'rotate(180deg)' }}>➔</span>
             <span className="sidebar-item-text">Sair</span>
@@ -248,9 +263,8 @@ function DashboardAdmin() {
 
       </aside>
 
-      {/* CONTEÚDO PRINCIPAL (Área da Direita) */}
+      {/* CONTEÚDO PRINCIPAL */}
       <main className="admin-content">
-          {/* Cabeçalho */}
           <header className="admin-header">
               <h2>
                   {abaAtiva === 'agenda' ? 'Agenda Geral' : 
@@ -264,7 +278,6 @@ function DashboardAdmin() {
               </div>
           </header>
 
-          {/* Renderiza o conteúdo da aba selecionada */}
           {renderizarConteudoPrincipal()}
       </main>
     </div>
