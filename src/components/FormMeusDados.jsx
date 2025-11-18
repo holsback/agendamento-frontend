@@ -111,17 +111,6 @@ function FormMeusDados() {
                 </p>
 
                 <div className="input-grupo">
-                    <label>Nova Senha</label>
-                    <input 
-                        type="password" 
-                        placeholder="Deixe em branco para manter a atual" 
-                        value={novaSenha} 
-                        onChange={e => setNovaSenha(e.target.value)} 
-                        minLength={8}
-                    />
-                </div>
-
-                <div className="input-grupo">
                     <label>Senha Atual (Para confirmar alteração de senha)</label>
                     <input 
                         type="password" 
@@ -130,6 +119,17 @@ function FormMeusDados() {
                         onChange={e => setSenhaAtual(e.target.value)} 
                         // O campo vira obrigatório (required) SE a novaSenha estiver preenchida
                         required={!!novaSenha} 
+                    />
+                </div>
+
+                <div className="input-grupo">
+                    <label>Nova Senha</label>
+                    <input 
+                        type="password" 
+                        placeholder="Deixe em branco para manter a atual" 
+                        value={novaSenha} 
+                        onChange={e => setNovaSenha(e.target.value)} 
+                        minLength={8}
                     />
                 </div>
 
