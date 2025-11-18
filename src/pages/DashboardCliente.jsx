@@ -13,7 +13,7 @@ const IconeSeta = () => (
 
 function DashboardCliente() {
   
-  const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(true); 
+  const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(false); 
   const [abaAtiva, setAbaAtiva] = useState('calendario');
   const [refreshKey, setRefreshKey] = useState(0); 
   const [dataClicada, setDataClicada] = useState(""); 

@@ -21,7 +21,7 @@ function DashboardAdmin() {
   const [abaAtiva, setAbaAtiva] = useState('agenda');
   const [subAbaAgenda, setSubAbaAgenda] = useState('calendario');
   const [colaboradorEmEdicao, setColaboradorEmEdicao] = useState(null);
-  const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(true);
+  const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(false);
   
   const navegar = useNavigate();
 

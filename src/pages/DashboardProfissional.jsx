@@ -14,7 +14,7 @@ const IconeSeta = () => (
 
 function DashboardProfissional() {
   const [nomeProfissional, setNomeProfissional] = useState("");
-  const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(true); 
+  const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(false); 
   const [abaAtiva, setAbaAtiva] = useState('calendario');
 
   const navegar = useNavigate();
