@@ -85,7 +85,7 @@ function FormMeusDados() {
 
     return (
         <div className="content-card" style={{ maxWidth: '600px', margin: '0 auto' }}>
-            <h2 className="titulo-login" style={{ marginTop: 0 }}>Configurações</h2>
+            <h2 className="titulo-login" style={{ marginTop: 0 }}>Meus Dados</h2>
             
             <form onSubmit={handleSubmit} className="formulario-login">
                 
@@ -111,7 +111,7 @@ function FormMeusDados() {
                 </p>
 
                 <div className="input-grupo">
-                    <label>Senha Atual (Para confirmar alteração de senha)</label>
+                    <label>Senha Atual</label>
                     <input 
                         type="password" 
                         placeholder="Digite sua senha atual" 

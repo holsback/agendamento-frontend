@@ -187,13 +187,13 @@ function DashboardCliente() {
           return (
               <div className="content-card">
                   <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px' }}>
-                      <h2 className="titulo-login" style={{ margin: 0 }}>Meus Agendamentos</h2>
+                      <h2 className="titulo-login" style={{ margin: 0 }}>Agendamentos</h2>
                       <button 
                           className="botao-login" 
                           style={{ marginTop: 0, padding: '8px 16px', fontSize: '14px' }}
                           onClick={() => setAbaAtiva('novo')}
                       >
-                          + Novo
+                          +
                       </button>
                   </div>
                   {renderizarListaMeusAgendamentos()}
@@ -293,9 +293,9 @@ function DashboardCliente() {
         <main className="admin-content">
             <header className="admin-header">
                 <h2>
-                    {abaAtiva === 'novo' ? 'Fazer Agendamento' : 
-                     abaAtiva === 'configuracoes' ? 'Minhas Configurações' : 
-                     'Painel do Cliente'}
+                    {abaAtiva === 'novo' ? 'Painel de Agendamentos' : 
+                     abaAtiva === 'configuracoes' ? 'Configurações' : 
+                     ''}
                 </h2>
                 <span style={{ color: '#aaa' }}>Olá, Cliente!</span>
             </header>

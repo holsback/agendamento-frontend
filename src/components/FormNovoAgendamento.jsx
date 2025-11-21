@@ -199,7 +199,7 @@ function FormNovoAgendamento({ onAgendamentoSucesso }) {
   // Renderização principal do formulário
   return (
     <form className="formulario-login" onSubmit={handleSubmit}>
-      <h2 className="titulo-login">Fazer novo agendamento</h2>
+      <h2 className="titulo-login">Novo agendamento</h2>
       
       {/* Etapa 1: Profissional */}
       <div className="input-grupo">
@@ -215,7 +215,7 @@ function FormNovoAgendamento({ onAgendamentoSucesso }) {
       
       {/* Etapa 2: Serviços */}
       <div className="input-grupo">
-        <label>Serviços (Combo)</label>
+        <label>Serviços</label>
         <Select
           isMulti
           options={listaServicos}
