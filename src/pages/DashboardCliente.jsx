@@ -183,7 +183,6 @@ function DashboardCliente() {
   }
 
   function renderizarConteudoPrincipal() {
-      
       if (abaAtiva === 'meus_agendamentos') {
           return (
               <div className="content-card">
@@ -219,10 +218,8 @@ function DashboardCliente() {
           );
       }
 
-      // === Renderizar tela de Configurações ===
       if (abaAtiva === 'configuracoes') {
           return (
-              // Não precisa de card aqui pois o FormMeusDados já tem seu próprio card
               <FormMeusDados />
           );
       }
@@ -230,6 +227,7 @@ function DashboardCliente() {
 
   return (
     <div className="admin-container">
+        {/* SIDEBAR (Desktop) */}
         <aside className={`admin-sidebar ${isSidebarCollapsed ? 'collapsed' : ''}`}>
             
             <button 
@@ -248,12 +246,10 @@ function DashboardCliente() {
                     📅 <span className="sidebar-item-text">Meus Agendamentos</span>
                 </li>
                 
-                {/* === Item Configurações no Menu === */}
                 <li className={`sidebar-item ${abaAtiva === 'configuracoes' ? 'active' : ''}`}
                     onClick={() => setAbaAtiva('configuracoes')}>
                     ⚙️ <span className="sidebar-item-text">Configurações</span>
                 </li>
-
             </ul>
 
             <div className="sidebar-logout" onClick={handleLogout}>
@@ -261,11 +257,42 @@ function DashboardCliente() {
               <span className="sidebar-item-text">Sair</span>
             </div>
         </aside>
+        {/* --- BARRA INFERIOR (Mobile) --- */}
+        <nav className="bottom-nav">
+            <button 
+                className={`bottom-nav-item ${abaAtiva === 'meus_agendamentos' ? 'active' : ''}`} 
+                onClick={() => setAbaAtiva('meus_agendamentos')}
+            >
+                <span className="icon">📅</span>
+                <span>Agenda</span>
+            </button>
+            
+            <button 
+                className={`bottom-nav-item ${abaAtiva === 'novo' ? 'active' : ''}`} 
+                onClick={() => setAbaAtiva('novo')}
+            >
+                <span className="icon">➕</span>
+                <span>Novo</span>
+            </button>
+            
+            <button 
+                className={`bottom-nav-item ${abaAtiva === 'configuracoes' ? 'active' : ''}`} 
+                onClick={() => setAbaAtiva('configuracoes')}
+            >
+                <span className="icon">⚙️</span>
+                <span>Config</span>
+            </button>
+            
+            <button className="bottom-nav-item" onClick={handleLogout} style={{ color: '#ff8a80' }}>
+                <span className="icon">🚪</span>
+                <span>Sair</span>
+            </button>
+        </nav>
+        {/* --- FIM DA BARRA INFERIOR --- */}
 
         <main className="admin-content">
             <header className="admin-header">
                 <h2>
-                    {/* === Título Dinâmico === */}
                     {abaAtiva === 'novo' ? 'Fazer Agendamento' : 
                      abaAtiva === 'configuracoes' ? 'Minhas Configurações' : 
                      'Painel do Cliente'}
