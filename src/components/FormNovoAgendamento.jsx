@@ -5,27 +5,32 @@ import Select from 'react-select';
 
 /**
  * (FORMULÁRIO INTELIGENTE)
- * Este formulário agora busca horários disponíveis no Backend.
- * Ele não usa mais a 'dataInicial' do clique no calendário.
+ * Este formulário busca horários disponíveis no Backend.
+ * TAMBÉM: Filtra os serviços baseados no profissional selecionado.
  */
 function FormNovoAgendamento({ onAgendamentoSucesso }) {
 
   // --- Estados dos Dropdowns ---
-  const [listaProfissionais, setListaProfissionais] = useState([]);
-  const [listaServicos, setListaServicos] = useState([]);
+  const [listaProfissionais, setListaProfissionais] = useState([]); // Opções {value, label} para o Select
   
-  const [profissionalSelecionado, setProfissionalSelecionado] = useState(null); // Guarda o { value, label } do profissional
-  const [servicosSelecionados, setServicosSelecionados] = useState([]); // Guarda a lista de { value, label } dos serviços
+  // ESTADOS PARA O FILTRO
+  const [profissionaisDados, setProfissionaisDados] = useState([]); // Dados COMPLETOS dos profissionais (incluindo lista de serviços)
+  const [todasOpcoesServicos, setTodasOpcoesServicos] = useState([]); // Catálogo COMPLETO de serviços {value, label}
+  
+  const [listaServicos, setListaServicos] = useState([]); // Lista FILTRADA que aparece no Select
+  
+  const [profissionalSelecionado, setProfissionalSelecionado] = useState(null); 
+  const [servicosSelecionados, setServicosSelecionados] = useState([]); 
 
   // --- Estados do Fluxo de Horário ---
-  const [diaSelecionado, setDiaSelecionado] = useState(""); // Guarda o 'YYYY-MM-DD'
-  const [horariosDisponiveis, setHorariosDisponiveis] = useState([]); // Guarda a lista de horários (ex: ["09:00", "10:30"])
-  const [horarioSelecionado, setHorarioSelecionado] = useState(""); // Guarda o horário que o usuário clicou (ex: "10:30")
+  const [diaSelecionado, setDiaSelecionado] = useState(""); 
+  const [horariosDisponiveis, setHorariosDisponiveis] = useState([]); 
+  const [horarioSelecionado, setHorarioSelecionado] = useState(""); 
   const [carregandoHorarios, setCarregandoHorarios] = useState(false);
-  const [minDate, setMinDate] = useState(""); // Para travar datas passadas no calendário
+  const [minDate, setMinDate] = useState(""); 
 
   // --- Estados de Feedback ---
-  const [carregandoComponente, setCarregandoComponente] = useState(true); // Para os selects iniciais
+  const [carregandoComponente, setCarregandoComponente] = useState(true); 
   const [carregandoSubmit, setCarregandoSubmit] = useState(false);
   const [erro, setErro] = useState("");
   const [sucesso, setSucesso] = useState("");
@@ -47,7 +52,7 @@ function FormNovoAgendamento({ onAgendamentoSucesso }) {
       input: (styles) => ({ ...styles, color: '#f0f0f0' })
   };
 
-  // 1. Efeito que carrega os Profissionais e Serviços (só roda uma vez)
+  // 1. Efeito que carrega os Profissionais e o Catálogo de Serviços (só roda uma vez)
   useEffect(() => {
     async function carregarDados() {
         try {
@@ -55,11 +60,23 @@ function FormNovoAgendamento({ onAgendamentoSucesso }) {
                 axios.get("/usuarios/profissionais"),
                 axios.get("/servicos")
             ]);
+            
+            // Guarda os dados BRUTOS (onde temos a lista de IDs de serviços de cada um)
+            setProfissionaisDados(resProfissionais.data);
+
+            // Prepara as opções visuais para o Select de Profissionais
             setListaProfissionais(resProfissionais.data.map(p => ({ value: p.id, label: p.nome })));
-            setListaServicos(resServicos.data.map(s => ({ 
+            
+            // Prepara o catálogo COMPLETO de serviços
+            const catalogoCompleto = resServicos.data.map(s => ({ 
                 value: s.id, 
                 label: `${s.nome} - R$ ${s.preco} (${s.duracaoMinutos} min)` 
-            })));
+            }));
+            setTodasOpcoesServicos(catalogoCompleto);
+            
+            // Inicialmente, a lista filtrada fica vazia (até selecionar alguém)
+            setListaServicos([]);
+
         } catch (err) {
             console.error("Erro ao carregar dados:", err);
             setErro("Erro ao carregar opções de agendamento.");
@@ -69,41 +86,62 @@ function FormNovoAgendamento({ onAgendamentoSucesso }) {
     }
     carregarDados();
 
-    // Define a data mínima para o input 'date' (não permite agendar para o passado)
     const hoje = new Date();
     const offset = hoje.getTimezoneOffset();
     const hojeLocal = new Date(hoje.getTime() - (offset * 60000));
     setMinDate(hojeLocal.toISOString().split('T')[0]);
 
-  }, []); // Array de dependências vazio = roda 1 vez
+  }, []);
+
+  // EFEITO: Filtra Serviços quando o Profissional muda
+  useEffect(() => {
+      // Sempre que trocar de profissional, limpamos os serviços selecionados anteriormente
+      setServicosSelecionados([]);
+      
+      if (profissionalSelecionado) {
+          // 1. Acha os dados completos desse profissional na nossa memória
+          const dadosPro = profissionaisDados.find(p => p.id === profissionalSelecionado.value);
+          
+          if (dadosPro && dadosPro.servicosIds && dadosPro.servicosIds.length > 0) {
+              // 2. Filtra o catálogo: Só deixa passar os serviços que o profissional tem na lista dele
+              const servicosDoProfissional = todasOpcoesServicos.filter(servico => 
+                  dadosPro.servicosIds.includes(servico.value)
+              );
+              setListaServicos(servicosDoProfissional);
+          } else {
+              // Se ele não tiver nenhum serviço vinculado, a lista fica vazia
+              setListaServicos([]);
+          }
+      } else {
+          // Se nenhum profissional estiver selecionado, lista vazia
+          setListaServicos([]);
+      }
+  }, [profissionalSelecionado, profissionaisDados, todasOpcoesServicos]);
+
 
   // 2. Efeito que BUSCA HORÁRIOS (roda sempre que os 3 pilares mudam)
   useEffect(() => {
-    // Limpa os horários antigos sempre que um dos 3 pilares mudar
     setHorariosDisponiveis([]);
     setHorarioSelecionado("");
-    setErro(""); // Limpa erros antigos
+    setErro(""); 
 
-    // Só busca na API se os 3 campos estiverem preenchidos
     if (profissionalSelecionado && servicosSelecionados.length > 0 && diaSelecionado) {
         
-        // 2a. Calcula a duração total dos serviços selecionados
         const duracaoTotal = servicosSelecionados.reduce((total, servico) => {
             const match = servico.label.match(/(\d+)\s*min/);
             if (match) return total + parseInt(match[1]);
             return total;
         }, 0);
 
-        if (duracaoTotal === 0) return; // Segurança
+        if (duracaoTotal === 0) return; 
 
-        // 2b. Busca na API
         async function buscarDisponibilidade() {
             setCarregandoHorarios(true);
             try {
                 const resposta = await axios.get(`/usuarios/${profissionalSelecionado.value}/disponibilidade`, {
                     params: {
-                        data: diaSelecionado, // ex: "2025-11-12"
-                        duracao: duracaoTotal // ex: 90
+                        data: diaSelecionado, 
+                        duracao: duracaoTotal 
                     }
                 });
                 setHorariosDisponiveis(resposta.data);
@@ -116,9 +154,9 @@ function FormNovoAgendamento({ onAgendamentoSucesso }) {
         }
         buscarDisponibilidade();
     }
-  }, [profissionalSelecionado, servicosSelecionados, diaSelecionado]); // Os 3 "gatilhos"
+  }, [profissionalSelecionado, servicosSelecionados, diaSelecionado]); 
 
-  // 3. Função final de AGENDAR (combina dia + hora)
+  // 3. Função final de AGENDAR
   async function handleSubmit(evento) {
     evento.preventDefault();
     setCarregandoSubmit(true);
@@ -126,27 +164,24 @@ function FormNovoAgendamento({ onAgendamentoSucesso }) {
     setSucesso("");
 
     try {
-      // Combina o dia (YYYY-MM-DD) e a hora (HH:MM)
       const dataHoraFormatada = `${diaSelecionado}T${horarioSelecionado}`; 
       
       const listaIds = servicosSelecionados.map(opcao => opcao.value);
       const novoAgendamentoDTO = {
         profissionalId: profissionalSelecionado.value,
         servicosIds: listaIds,
-        dataHora: dataHoraFormatada // Envia a data/hora combinada
+        dataHora: dataHoraFormatada 
       };
       await axios.post("/agendamentos", novoAgendamentoDTO);
 
       setSucesso("Agendamento criado com sucesso!");
       
-      // Limpa tudo para o próximo agendamento
       setProfissionalSelecionado(null);
       setServicosSelecionados([]);
       setDiaSelecionado("");
       setHorarioSelecionado("");
       setHorariosDisponiveis([]);
 
-      // Avisa o "Pai" (DashboardCliente) que terminamos
       if (onAgendamentoSucesso) {
           onAgendamentoSucesso();
       }
@@ -162,17 +197,14 @@ function FormNovoAgendamento({ onAgendamentoSucesso }) {
     }
   }
   
-  // Função auxiliar para renderizar os botões de horário
   function renderizarSlotsDeHorario() {
     if (carregandoHorarios) {
         return <p style={{ color: '#aaa', textAlign: 'center' }}>Buscando horários...</p>;
     }
-    // Se não está carregando, mas tem uma data E não achou horários
     if (horariosDisponiveis.length === 0 && diaSelecionado && profissionalSelecionado && servicosSelecionados.length > 0) {
         return <p style={{ color: '#aaa', textAlign: 'center' }}>Nenhum horário livre encontrado para esta data/duração.</p>;
     }
     
-    // Se não tiver data/pro/serviço, não mostra nada
     if (horariosDisponiveis.length === 0) {
         return null; 
     }
@@ -181,7 +213,7 @@ function FormNovoAgendamento({ onAgendamentoSucesso }) {
         <div className="horarios-container">
             {horariosDisponiveis.map(horario => (
                 <button
-                    type="button" // Impede o botão de submeter o formulário
+                    type="button" 
                     key={horario}
                     className={`horario-slot ${horario === horarioSelecionado ? 'selecionado' : ''}`}
                     onClick={() => setHorarioSelecionado(horario)}
@@ -193,10 +225,8 @@ function FormNovoAgendamento({ onAgendamentoSucesso }) {
     );
   }
 
-  // Se os selects ainda não carregaram, mostra mensagem
   if (carregandoComponente) return <p>Carregando opções...</p>;
 
-  // Renderização principal do formulário
   return (
     <form className="formulario-login" onSubmit={handleSubmit}>
       <h2 className="titulo-login">Novo agendamento</h2>
@@ -213,21 +243,28 @@ function FormNovoAgendamento({ onAgendamentoSucesso }) {
         />
       </div>
       
-      {/* Etapa 2: Serviços */}
+      {/* Etapa 2: Serviços (Agora filtrados!) */}
       <div className="input-grupo">
         <label>Serviços</label>
         <Select
           isMulti
-          options={listaServicos}
+          options={listaServicos} // Usa a lista filtrada
           value={servicosSelecionados}
           onChange={setServicosSelecionados}
-          placeholder="Selecione os serviços..."
+          placeholder={
+              !profissionalSelecionado 
+              ? "Selecione um profissional primeiro..." 
+              : listaServicos.length === 0 
+                  ? "Este profissional não possui serviços vinculados." 
+                  : "Selecione os serviços..."
+          }
           styles={darkSelectStyles}
-          noOptionsMessage={() => "Nenhum serviço encontrado"}
+          isDisabled={!profissionalSelecionado || listaServicos.length === 0} // Desabilita se não tiver profissional ou serviços
+          noOptionsMessage={() => "Nenhum serviço disponível"}
         />
       </div>
 
-      {/* Etapa 3: Dia (só aparece se os 2 acima estiverem OK) */}
+      {/* Etapa 3: Dia */}
       {(profissionalSelecionado && servicosSelecionados.length > 0) && (
         <div className="input-grupo">
           <label htmlFor="data">Dia</label>
@@ -236,13 +273,13 @@ function FormNovoAgendamento({ onAgendamentoSucesso }) {
             id="data"
             value={diaSelecionado}
             onChange={e => setDiaSelecionado(e.target.value)}
-            min={minDate} // Impede selecionar datas passadas
+            min={minDate} 
             required
           />
         </div>
       )}
 
-      {/* Etapa 4: Horário (Aparece dinamicamente) */}
+      {/* Etapa 4: Horário */}
       <div className="input-grupo">
             <label>{horariosDisponiveis.length > 0 ? 'Horários Disponíveis' : ''}</label>
             {renderizarSlotsDeHorario()}
@@ -251,12 +288,11 @@ function FormNovoAgendamento({ onAgendamentoSucesso }) {
       {erro && <p className="mensagem-erro" style={{ marginTop: '10px' }}>{erro}</p>}
       {sucesso && <p className="mensagem-sucesso" style={{ marginTop: '10px' }}>{sucesso}</p>}
       
-      {/* Botão de Agendar (só habilita se tudo estiver preenchido) */}
       <button
         type="submit"
         className="botao-login"
         disabled={carregandoSubmit || !profissionalSelecionado || servicosSelecionados.length === 0 || !horarioSelecionado}
-        style={{ marginTop: '20px' }} // Garante a margem correta
+        style={{ marginTop: '20px' }} 
       >
         {carregandoSubmit ? 'Agendando...' : 'Confirmar Agendamento'}
       </button>

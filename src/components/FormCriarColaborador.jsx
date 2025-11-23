@@ -17,6 +17,10 @@ function FormCriarColaborador({ onColaboradorCriado, colaboradorParaEditar, onCa
   const [telefone, setTelefone] = useState("");
   const [senha, setSenha] = useState("");
   const [perfilSelecionado, setPerfilSelecionado] = useState(null); 
+  
+  // === ESTADOS PARA SERVIÇOS ===
+  const [listaServicos, setListaServicos] = useState([]); // Todas as opções disponíveis (Corte, Barba...)
+  const [servicosSelecionados, setServicosSelecionados] = useState([]); // As opções que o admin marcou
 
   // --- Estados de Lógica e Permissão ---
   const [opcoesPerfilPermitidas, setOpcoesPerfilPermitidas] = useState([]); 
@@ -43,13 +47,15 @@ function FormCriarColaborador({ onColaboradorCriado, colaboradorParaEditar, onCa
       color: '#f0f0f0',
       ':active': { ...styles[':active'], backgroundColor: '#0069ff' },
     }),
+    multiValue: (styles) => ({ ...styles, backgroundColor: '#444' }), // Estilo para as "etiquetas" selecionadas
+    multiValueLabel: (styles) => ({ ...styles, color: '#f0f0f0' }),
     singleValue: (styles) => ({ ...styles, color: '#f0f0f0' }),
     placeholder: (styles) => ({ ...styles, color: '#aaa' }),
     input: (styles) => ({ ...styles, color: '#f0f0f0' })
   };
 
   /**
-   * Efeito 1: Define as permissões do admin logado
+   * Efeito 1: Carrega permissões E a lista de serviços disponíveis
    */
   useEffect(() => {
       const token = localStorage.getItem("authToken");
@@ -74,11 +80,27 @@ function FormCriarColaborador({ onColaboradorCriado, colaboradorParaEditar, onCa
               setOpcoesPerfilPermitidas([]); 
           }
       }
+
+      // === BUSCA SERVIÇOS NA API ===
+      async function carregarServicos() {
+          try {
+              const res = await axios.get("/servicos");
+              // Transforma o formato da API no formato que o Select entende: { value: id, label: nome }
+              const opcoesFormatadas = res.data.map(s => ({
+                  value: s.id,
+                  label: s.nome
+              }));
+              setListaServicos(opcoesFormatadas);
+          } catch (err) {
+              console.error("Erro ao carregar serviços:", err);
+          }
+      }
+      carregarServicos();
+
   }, []); 
 
   /**
    * Efeito 2: Preenche o formulário para "Edição" ou "limpa" para "Criação".
-   * (Corrigido no Passo 2.1)
    */
   useEffect(() => {
       if (colaboradorParaEditar) {
@@ -91,6 +113,18 @@ function FormCriarColaborador({ onColaboradorCriado, colaboradorParaEditar, onCa
                               { value: colaboradorParaEditar.perfil, label: colaboradorParaEditar.perfil };
           
           setPerfilSelecionado(perfilOpcao);
+
+          // === PREENCHE OS SERVIÇOS SELECIONADOS ===
+          // Se o DTO trouxer a lista de IDs (que criamos no Passo 3), nós usamos para pré-selecionar
+          if (colaboradorParaEditar.servicosIds && listaServicos.length > 0) {
+              const servicosDoUser = listaServicos.filter(opcao => 
+                  colaboradorParaEditar.servicosIds.includes(opcao.value)
+              );
+              setServicosSelecionados(servicosDoUser);
+          } else {
+              setServicosSelecionados([]);
+          }
+
           setSenha(""); 
           setErro("");
           setSucesso("");
@@ -100,6 +134,7 @@ function FormCriarColaborador({ onColaboradorCriado, colaboradorParaEditar, onCa
           setEmail("");
           setTelefone("");
           setSenha("");
+          setServicosSelecionados([]); // Limpa serviços
           
           if (meuPerfil === 'ROLE_GERENTE' && opcoesPerfilPermitidas.length === 1) {
               setPerfilSelecionado(opcoesPerfilPermitidas[0]);
@@ -107,7 +142,7 @@ function FormCriarColaborador({ onColaboradorCriado, colaboradorParaEditar, onCa
               setPerfilSelecionado(null);
           }
       }
-  }, [colaboradorParaEditar, opcoesPerfilPermitidas, meuPerfil]); 
+  }, [colaboradorParaEditar, opcoesPerfilPermitidas, meuPerfil, listaServicos]); 
 
   /**
    * Função chamada quando o usuário clica no botão "Salvar" (submit)
@@ -118,25 +153,23 @@ function FormCriarColaborador({ onColaboradorCriado, colaboradorParaEditar, onCa
     setErro("");
     setSucesso("");
 
-    // Limpa o telefone (Correção do Problema 1)
     const telefoneLimpo = telefone.replace(/\D/g, "");
 
     try {
+      let idColaborador = null; // Vamos guardar o ID aqui (seja criado ou editado)
+
       if (colaboradorParaEditar) {
           // --- MODO EDIÇÃO (PUT) ---
+          idColaborador = colaboradorParaEditar.id;
+
           const dadosAtualizados = {
             nome: nome,
             telefone: telefoneLimpo, 
             perfil: perfilSelecionado ? perfilSelecionado.value : null,
             senha: senha || null 
           };
-          await axios.put(`/admin/atualizar-colaborador/${colaboradorParaEditar.id}`, dadosAtualizados);
+          await axios.put(`/admin/atualizar-colaborador/${idColaborador}`, dadosAtualizados);
           setSucesso(`Colaborador ${nome} atualizado com sucesso!`);
-          
-          // === NOSSA ALTERAÇÃO DESTE PASSO ESTÁ AQUI ===
-          // Apenas chamamos a função, sem enviar 'false'.
-          // O "Pai" (DashboardAdmin) vai receber isso e voltar para a lista.
-          if (onColaboradorCriado) onColaboradorCriado();
 
       } else {
           // --- MODO CRIAÇÃO (POST) ---
@@ -146,31 +179,37 @@ function FormCriarColaborador({ onColaboradorCriado, colaboradorParaEditar, onCa
               return;
           }
           
-          await axios.post("/admin/criar-colaborador", {
+          const respostaCriacao = await axios.post("/admin/criar-colaborador", {
             nome: nome,
             email: email,
             telefone: telefoneLimpo,
             senha: senha,
             perfil: perfilSelecionado.value 
           });
+          
+          // O backend agora retorna o objeto completo (Passo 4), então pegamos o ID dele
+          idColaborador = respostaCriacao.data.id;
+          
           setSucesso(`Colaborador ${perfilSelecionado.label} criado com sucesso!`);
-
-          // Limpa o formulário (Correção do Passo 4.1 anterior)
-          setNome("");
-          setEmail("");
-          setTelefone("");
-          setSenha("");
-          if (meuPerfil === 'ROLE_GERENTE') {
-              setPerfilSelecionado(opcoesPerfilPermitidas[0]);
-          } else {
-              setPerfilSelecionado(null);
-          }
-
-          // === NOSSA ALTERAÇÃO DESTE PASSO ESTÁ AQUI ===
-          // Apenas chamamos a função, sem enviar 'true'.
-          // O "Pai" (DashboardAdmin) vai receber isso e voltar para a lista.
-          if (onColaboradorCriado) onColaboradorCriado();
       }
+
+      // === PASSO FINAL: VINCULAR SERVIÇOS ===
+      // Se o perfil for PROFISSIONAL, nós chamamos a rota de vínculo
+      if (perfilSelecionado && perfilSelecionado.value === 'ROLE_PROFISSIONAL') {
+          
+          // Extrai apenas os IDs (ex: ["uuid1", "uuid2"])
+          const idsParaVincular = servicosSelecionados.map(s => s.value);
+          
+          // Chama a rota que criamos no Passo 2
+          await axios.put(`/admin/profissionais/${idColaborador}/servicos`, idsParaVincular);
+      }
+
+      // Limpa tudo e avisa o pai
+      if (!colaboradorParaEditar) {
+          setNome(""); setEmail(""); setTelefone(""); setSenha(""); setServicosSelecionados([]);
+      }
+      
+      if (onColaboradorCriado) onColaboradorCriado();
       
     } catch (erroApi) {
        console.error("Erro ao salvar colaborador:", erroApi);
@@ -188,21 +227,20 @@ function FormCriarColaborador({ onColaboradorCriado, colaboradorParaEditar, onCa
          setErro("Erro ao conectar com o servidor.");
        }
     } finally {
-      // NOTA: O 'setCarregando(false)' foi movido para cá no passo anterior
       setCarregando(false); 
     }
   }
 
-  // --- Lógica de Renderização ---
   const isPerfilDisabled = 
       meuPerfil === 'ROLE_GERENTE' || 
       (colaboradorParaEditar && !opcoesPerfilPermitidas.find(op => op.value === colaboradorParaEditar.perfil));
 
-  // --- Renderização (HTML) da página ---
+  // Verifica se devemos mostrar o campo de serviços (apenas para Profissionais)
+  const mostrarCampoServicos = perfilSelecionado && perfilSelecionado.value === 'ROLE_PROFISSIONAL';
+
   return (
     <form className="formulario-login" onSubmit={handleSubmit}>
       <h2 className="titulo-login" style={{ marginTop: 0 }}>
-          {/* O título agora mostra "Editando: Nome" ou "Novo Colaborador" */}
           {colaboradorParaEditar ? `Editando: ${colaboradorParaEditar.nome}` : 'Novo Colaborador'}
       </h2>
 
@@ -232,7 +270,13 @@ function FormCriarColaborador({ onColaboradorCriado, colaboradorParaEditar, onCa
          <Select
             options={opcoesPerfilPermitidas} 
             value={perfilSelecionado} 
-            onChange={setPerfilSelecionado} 
+            onChange={(opcao) => {
+                setPerfilSelecionado(opcao);
+                // Se mudar para algo que não é profissional, limpa os serviços selecionados
+                if (opcao && opcao.value !== 'ROLE_PROFISSIONAL') {
+                    setServicosSelecionados([]);
+                }
+            }} 
             placeholder={meuPerfil === 'ROLE_GERENTE' ? 'Profissional' : 'Selecione o cargo...'}
             styles={darkSelectStyles} 
             required={!colaboradorParaEditar}
@@ -240,13 +284,32 @@ function FormCriarColaborador({ onColaboradorCriado, colaboradorParaEditar, onCa
          />
       </div>
 
+      {/* === CAMPO: SERVIÇOS (Só aparece para Profissional) === */}
+      {mostrarCampoServicos && (
+          <div className="input-grupo">
+              <label>Serviços Realizados</label>
+              <Select
+                  isMulti // Permite selecionar vários
+                  options={listaServicos}
+                  value={servicosSelecionados}
+                  onChange={setServicosSelecionados}
+                  placeholder="Selecione os serviços..."
+                  styles={darkSelectStyles}
+                  noOptionsMessage={() => "Nenhum serviço cadastrado"}
+              />
+              <small style={{color: '#aaa', fontSize: '12px'}}>
+                  * Selecione quais serviços este profissional sabe fazer.
+              </small>
+          </div>
+      )}
+
       {/* Campo Telefone */}
       <div className="input-grupo">
         <label>Telefone</label>
         <input type="tel" placeholder="(11) 99999-8888" value={telefone} onChange={e => setTelefone(e.target.value)} required />
       </div>
 
-      {/* Campo de Senha (é opcional na edição) */}
+      {/* Campo de Senha */}
       <div className="input-grupo">
         <label>{colaboradorParaEditar ? 'Nova Senha (Opcional)' : 'Senha Inicial'}</label>
         <input 
@@ -258,13 +321,10 @@ function FormCriarColaborador({ onColaboradorCriado, colaboradorParaEditar, onCa
         />
       </div>
 
-      {/* Mensagens de Feedback */}
       {erro && <p className="mensagem-erro">{erro}</p>}
       {sucesso && <p className="mensagem-sucesso">{sucesso}</p>}
 
-      {/* Botões de Ação */}
       <div style={{ marginTop: '20px', display: 'flex', gap: '10px' }}>
-          {/* Botão de Salvar/Criar */}
           <button 
               type="submit" 
               className="botao-login" 
@@ -274,7 +334,6 @@ function FormCriarColaborador({ onColaboradorCriado, colaboradorParaEditar, onCa
               {carregando ? 'Salvando...' : (colaboradorParaEditar ? 'Salvar Alterações' : 'Criar Colaborador')}
           </button>
           
-          {/* Botão Cancelar (agora chama a função do "Pai") */}
           <button 
               type="button" 
               onClick={onCancelarEdicao} 
@@ -283,7 +342,6 @@ function FormCriarColaborador({ onColaboradorCriado, colaboradorParaEditar, onCa
           >
               Cancelar
           </button>
-          
       </div>
     </form>
   )
