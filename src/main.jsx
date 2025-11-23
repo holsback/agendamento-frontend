@@ -12,6 +12,7 @@ import RegisterPage from './pages/RegisterPage.jsx'
 import DashboardCliente from './pages/DashboardCliente.jsx'
 import DashboardAdmin from './pages/DashboardAdmin.jsx'
 import DashboardProfissional from './pages/DashboardProfissional.jsx'
+import VerificarEmailPage from './pages/VerificarEmailPage.jsx'
 
 // --- CONFIGURAÇÃO GLOBAL DO AXIOS ---
 
@@ -23,13 +24,8 @@ if (token) {
   axios.defaults.headers.common['Authorization'] = `Bearer ${token}`;
 }
 
-// === NOSSA ALTERAÇÃO DESTE PASSO ESTÁ AQUI ===
-// Definimos a "URL Base" da nossa API.
-// Agora, o Axios sabe que TODA requisição deve ir para este endereço.
-// Quando chamarmos axios.post('/auth/login'), ele automaticamente
-// vai chamar "http://localhost:8080/auth/login".
+// URL Base da API (Backend)
 axios.defaults.baseURL = 'http://localhost:8080';
-// --- FIM DA ALTERAÇÃO ---
 
 
 // --- INTERCEPTOR GLOBAL DE ERROS ---
@@ -44,14 +40,13 @@ axios.interceptors.response.use(
     // 401 (Não Autorizado) ou 403 (Proibido) significam que o token venceu ou é inválido.
     if (error.response && (error.response.status === 401 || error.response.status === 403)) {
 
-      // Verifica se o erro NÃO aconteceu nas telas de login ou registro.
-      // (Se o erro foi no login, não queremos deslogar o usuário, só mostrar "senha errada")
+      // Verifica se o erro NÃO aconteceu nas telas de login ou registro ou verificação.
       const url = error.config.url;
       
-      // === ATUALIZAÇÃO IMPORTANTE NA LÓGICA ===
-      // Como agora usamos baseURL, o error.config.url será relativo (ex: '/auth/login')
-      // Então, verificamos se a URL *termina* com /login ou /registrar
-      if (!url.endsWith('/auth/login') && !url.endsWith('/auth/registrar')) {
+      // Se o erro não foi no login, registro ou verificação de email, desloga o usuário
+      if (!url.endsWith('/auth/login') && 
+          !url.endsWith('/auth/registrar') && 
+          !url.includes('/auth/verificar-email')) { // <--- PROTEÇÃO DE VERIFICAÇÃO
         
         console.warn("Token vencido ou inválido! Forçando logout...");
         localStorage.removeItem("authToken"); // Remove o token quebrado
@@ -61,7 +56,7 @@ axios.interceptors.response.use(
         window.location.href = "/";
       }
     }
-    // Repassa o erro para o componente local (ex: LoginPage) poder tratar
+    // Repassa o erro para o componente local poder tratar
     return Promise.reject(error);
   }
 );
@@ -69,23 +64,27 @@ axios.interceptors.response.use(
 // --- DEFINIÇÃO DAS ROTAS (PÁGINAS) ---
 const router = createBrowserRouter([
   {
-    path: "/", // A página inicial (raiz)
-    element: <LoginPage />, // Mostra o componente LoginPage
+    path: "/", // A página inicial (raiz) - Login
+    element: <LoginPage />, 
   },
   {
-    path: "/registrar",
+    path: "/registrar", // Página de criar conta
     element: <RegisterPage />,
   },
   {
-    path: "/dashboard-cliente",
+    path: "/verificar-email", // <--- Verificação de E-mail
+    element: <VerificarEmailPage />,
+  },
+  {
+    path: "/dashboard-cliente", // Área do Cliente
     element: <DashboardCliente />,
   },
   {
-    path: "/dashboard-admin",
+    path: "/dashboard-admin", // Área do Admin
     element: <DashboardAdmin />,
   },
   {
-    path: "/dashboard-profissional",
+    path: "/dashboard-profissional", // Área do Profissional
     element: <DashboardProfissional />,
   }
 ]);
@@ -93,7 +92,6 @@ const router = createBrowserRouter([
 // "Renderize" (desenhe) o aplicativo na tela
 ReactDOM.createRoot(document.getElementById('root')).render(
   <React.StrictMode>
-    {/* O RouterProvider é o que "lê" a URL e mostra a página correta */}
     <RouterProvider router={router} /> 
   </React.StrictMode>,
 )
