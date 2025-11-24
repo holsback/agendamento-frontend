@@ -1,6 +1,7 @@
 import '../App.css'; 
 import { useState, useEffect } from 'react'; 
 import { useNavigate } from 'react-router-dom';
+import { jwtDecode } from 'jwt-decode';
 import FormNovoAgendamento from '../components/FormNovoAgendamento';
 import FormMeusDados from '../components/FormMeusDados';
 import axios from 'axios';
@@ -19,6 +20,9 @@ function DashboardCliente() {
   
   const [meusAgendamentos, setMeusAgendamentos] = useState([]);
   const [carregandoLista, setCarregandoLista] = useState(true);
+  
+  // === ESTADO PARA O NOME ===
+  const [nomeCliente, setNomeCliente] = useState(""); 
 
   const navegar = useNavigate();
 
@@ -28,21 +32,41 @@ function DashboardCliente() {
       navegar("/");
   }
 
-  async function buscarMeusAgendamentos() {
-      setCarregandoLista(true);
-      try {
-          const resposta = await axios.get("/agendamentos"); 
-          setMeusAgendamentos(resposta.data);
-      } catch (error) {
-          console.error("Erro ao buscar meus agendamentos:", error);
-      } finally {
-          setCarregandoLista(false);
+  /**
+   * Decodifica o Nome do Usuário
+   */
+  useEffect(() => {
+      const token = localStorage.getItem("authToken");
+      if (token) {
+          try {
+              const decoded = jwtDecode(token);
+              // Pega o nome do token, ou usa "Cliente" se der erro
+              const nomeCompleto = decoded.nome || "Cliente";
+              // Pega só o primeiro nome
+              setNomeCliente(nomeCompleto.split(' ')[0]);
+          } catch (error) {
+              console.error("Erro ao ler token:", error);
+          }
       }
-  }
+  }, []);
 
+  /**
+   * Busca os agendamentos
+   */
   useEffect(() => {
       if (abaAtiva === 'meus_agendamentos') {
-          buscarMeusAgendamentos();
+        async function buscarMeusAgendamentos() {
+            setCarregandoLista(true);
+            try {
+                const resposta = await axios.get("/agendamentos"); 
+                setMeusAgendamentos(resposta.data);
+            } catch (error) {
+                console.error("Erro ao buscar meus agendamentos:", error);
+            } finally {
+                setCarregandoLista(false);
+            }
+        }
+        buscarMeusAgendamentos();
       }
   }, [abaAtiva, refreshKey]); 
 
@@ -59,7 +83,8 @@ function DashboardCliente() {
               status: "Cancelado"
           });
           alert("Agendamento cancelado!");
-          buscarMeusAgendamentos(); 
+          // Força atualização da lista
+          setRefreshKey(prevKey => prevKey + 1);
       } catch (error) {
           alert("Erro ao cancelar o agendamento.");
       }
@@ -257,6 +282,7 @@ function DashboardCliente() {
               <span className="sidebar-item-text">Sair</span>
             </div>
         </aside>
+        
         {/* --- BARRA INFERIOR (Mobile) --- */}
         <nav className="bottom-nav">
             <button 
@@ -288,7 +314,6 @@ function DashboardCliente() {
                 <span>Sair</span>
             </button>
         </nav>
-        {/* --- FIM DA BARRA INFERIOR --- */}
 
         <main className="admin-content">
             <header className="admin-header">
@@ -297,7 +322,7 @@ function DashboardCliente() {
                      abaAtiva === 'configuracoes' ? 'Configurações' : 
                      ''}
                 </h2>
-                <span style={{ color: '#aaa' }}>Olá, Cliente!</span>
+                <span style={{ color: '#aaa' }}>Olá, {nomeCliente}</span>
             </header>
             
             {renderizarConteudoPrincipal()}

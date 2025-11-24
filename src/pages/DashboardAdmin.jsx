@@ -2,6 +2,7 @@ import '../App.css';
 import { useState, useEffect } from 'react'; 
 import axios from 'axios'; 
 import { useNavigate } from 'react-router-dom';
+import { jwtDecode } from 'jwt-decode';
 import FormCriarColaborador from '../components/FormCriarColaborador';
 import AdminAgendaList from '../components/AdminAgendaList';
 import FormConfiguracao from '../components/FormConfiguracao';
@@ -25,13 +26,16 @@ function DashboardAdmin() {
   const [carregando, setCarregando] = useState(true); 
   const [erro, setErro] = useState(""); 
   const [abaAtiva, setAbaAtiva] = useState('agenda'); 
-  const [subAbaAgenda, setSubAbaAgenda] = useState('lista'); // Padrão 'lista' (Passo 2.1)
+  const [subAbaAgenda, setSubAbaAgenda] = useState('lista'); 
   const [colaboradorEmEdicao, setColaboradorEmEdicao] = useState(null); 
-  const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(false); // Padrão 'false' (Passo 1)
+  const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(false); 
   
-  // Estado para controlar a visualização da aba "Gestão de Equipe" (Passo 3.1)
+  // Estado para controlar a visualização da aba "Gestão de Equipe"
   const [modoEquipe, setModoEquipe] = useState('lista');
   
+  // === ESTADO PARA O NOME ===
+  const [nomeUsuario, setNomeUsuario] = useState(""); // Começa vazio
+
   const navegar = useNavigate(); 
 
   /**
@@ -80,20 +84,40 @@ function DashboardAdmin() {
 
     /**
      * Efeito (useEffect) que roda UMA VEZ quando a página carrega.
+     * Agora ele também decodifica o nome do usuário.
      */
     useEffect(() => { 
+        // 1. Lógica para pegar o nome do Token
+        const token = localStorage.getItem("authToken");
+        if (token) {
+            try {
+                const decoded = jwtDecode(token);
+                
+                // O backend agora manda o 'nome' dentro do token.
+                // Se por acaso não tiver (token antigo), usamos "Admin" como fallback.
+                const nomeCompleto = decoded.nome || "Admin";
+                
+                // Pega apenas o primeiro nome (separa por espaço e pega o primeiro pedaço)
+                const primeiroNome = nomeCompleto.split(' ')[0];
+                
+                setNomeUsuario(primeiroNome);
+            } catch (error) {
+                console.error("Erro ao decodificar nome:", error);
+            }
+        }
+
+        // 2. Busca os dados da tela
         buscarColaboradores(); 
     }, []); 
 
     /**
-     * Função "Callback" (Passo 3.3 - Correção)
+     * Função "Callback"
      * Chamada pelo FormCriarColaborador após o sucesso.
-     * SEMPRE recarrega a lista E volta para a tela da lista.
      */
     function handleSucessoEquipe() {
-        buscarColaboradores(); // 1. Recarrega a lista de membros
-        setColaboradorEmEdicao(null); // 2. Limpa o modo de edição
-        setModoEquipe('lista'); // 3. VOLTA PARA A TELA DA LISTA (SEMPRE)
+        buscarColaboradores(); 
+        setColaboradorEmEdicao(null); 
+        setModoEquipe('lista'); 
     }
 
     /**
@@ -117,7 +141,6 @@ function DashboardAdmin() {
                             <p style={{ fontSize: '13px', color: '#aaa', margin: '0' }}>{colab.telefone}</p>
                         </div>
                         <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
-                            {/* Ao clicar em Editar, seta os dados E MUDA O MODO para 'formulario' */}
                             <button onClick={() => { setColaboradorEmEdicao(colab); setModoEquipe('formulario'); }}
                                     style={{ backgroundColor: '#0069ff33', color: '#0069ff', border: '1px solid #0069ff', padding: '6px 12px', borderRadius: '6px', cursor: 'pointer', fontSize: '13px' }}>
                                 Editar
@@ -138,7 +161,7 @@ function DashboardAdmin() {
    */
   function renderizarConteudoPrincipal() {
       
-      // 1. ABA AGENDA GERAL (Invertemos as abas no Passo 2.2)
+      // 1. ABA AGENDA GERAL 
       if (abaAtiva === 'agenda') {
           return (
               <div className="content-card">
@@ -161,14 +184,12 @@ function DashboardAdmin() {
               </div>
           );
       
-      // 2. ABA GESTÃO DE EQUIPE (Layout 'if/else' do Passo 3.1)
+      // 2. ABA GESTÃO DE EQUIPE 
       } else if (abaAtiva === 'equipe') {
           return (
             modoEquipe === 'lista' 
             ? (
-                // --- SE 'modoEquipe' = 'lista', mostra a LISTA ---
                 <div className="content-card">
-                    {/* Header da Lista: Título + Novo Botão */}
                     <div style={{ 
                         display: 'flex', 
                         justifyContent: 'space-between', 
@@ -177,7 +198,6 @@ function DashboardAdmin() {
                     }}>
                         <h2 className="titulo-login" style={{ marginTop: 0, marginBottom: 0 }}>Lista de Membros</h2>
                         
-                        {/* O novo botão "+ Novo Colaborador" */}
                         <button 
                             className="botao-login" 
                             style={{ marginTop: 0, padding: '10px 15px', fontSize: '15px' }} 
@@ -189,12 +209,10 @@ function DashboardAdmin() {
                         </button>
                     </div>
 
-                    {/* A lista de membros */}
                     {renderizarListaMembros()}
                 </div>
             ) 
             : (
-                // --- SE 'modoEquipe' = 'formulario', mostra o FORMULÁRIO ---
                 <div className="content-card" style={{ maxWidth: '700px', margin: '0 auto' }}> 
                     <FormCriarColaborador 
                         onColaboradorCriado={handleSucessoEquipe} 
@@ -208,15 +226,12 @@ function DashboardAdmin() {
             )
           );
       
-      // 3. ABA SERVIÇOS (Refatorada no Passo 4.1)
+      // 3. ABA SERVIÇOS 
       } else if (abaAtiva === 'servicos') {
-           // O componente AdminServicos agora controla seu próprio layout interno
            return <AdminServicos />;
       
-      // === NOSSA ALTERAÇÃO DESTE PASSO ESTÁ AQUI ===
+      // 4. ABA CONFIGURAÇÕES
       } else if (abaAtiva === 'config') {
-          // Adicionamos o 'style' inline para centralizar o card
-          // exatamente como fizemos nos formulários de Equipe e Serviços.
           return ( 
             <div className="content-card" style={{ maxWidth: '700px', margin: '0 auto' }}>
                 <FormConfiguracao />
@@ -278,7 +293,7 @@ function DashboardAdmin() {
                    'Configurações'}
               </h2>
               <div style={{ display: 'flex', alignItems: 'center', gap: '15px' }}>
-                  <span style={{ color: '#aaa' }}>Olá, Admin</span>
+                  <span style={{ color: '#aaa' }}>Olá, {nomeUsuario}</span>
                   <div style={{ width: '40px', height: '40px', borderRadius: '50%', backgroundColor: '#333', border: '2px solid #0069ff' }}></div>
               </div>
           </header>

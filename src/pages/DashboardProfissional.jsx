@@ -13,7 +13,9 @@ const IconeSeta = () => (
 );
 
 function DashboardProfissional() {
+  // Estado para o nome
   const [nomeProfissional, setNomeProfissional] = useState("");
+  
   const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(false); 
   const [abaAtiva, setAbaAtiva] = useState('calendario');
 
@@ -28,8 +30,14 @@ function DashboardProfissional() {
   useEffect(() => {
      const token = localStorage.getItem("authToken");
      if (token) {
-         const decoded = jwtDecode(token);
-         setNomeProfissional(decoded.sub);
+         try {
+             const decoded = jwtDecode(token);
+             // Pega o nome, ou usa "Profissional" se falhar
+             const nomeCompleto = decoded.nome || "Profissional";
+             setNomeProfissional(nomeCompleto.split(' ')[0]); // Pega só o primeiro nome
+         } catch (error) {
+             console.error("Erro ao decodificar token:", error);
+         }
      }
   }, []);
 
@@ -48,7 +56,6 @@ function DashboardProfissional() {
                 ✂️ <span className="sidebar-logo-text">Agenda.Fácil</span>
             </div>
             
-            {/* 3. Menu principal */}
             <ul className="sidebar-menu">
                 <li 
                     className={`sidebar-item ${abaAtiva === 'calendario' ? 'active' : ''}`}
@@ -70,15 +77,42 @@ function DashboardProfissional() {
             </div>
         </aside>
 
+        {/* --- BARRA INFERIOR (Mobile) --- */}
+        <nav className="bottom-nav">
+            <button 
+                className={`bottom-nav-item ${abaAtiva === 'calendario' ? 'active' : ''}`} 
+                onClick={() => setAbaAtiva('calendario')}
+            >
+                <span className="icon">📅</span>
+                <span>Agenda</span>
+            </button>
+            
+            <button 
+                className={`bottom-nav-item ${abaAtiva === 'lista' ? 'active' : ''}`} 
+                onClick={() => setAbaAtiva('lista')}
+            >
+                <span className="icon">📋</span>
+                <span>Lista</span>
+            </button>
+            
+            <button className="bottom-nav-item" onClick={handleLogout} style={{ color: '#ff8a80' }}>
+                <span className="icon">🚪</span>
+                <span>Sair</span>
+            </button>
+        </nav>
+
         <main className="admin-content">
             <header className="admin-header">
                 <h2>
                     {abaAtiva === 'calendario' ? 'Minha Agenda (Visão)' : 'Gerenciar Agendamentos'}
                 </h2>
-                <span style={{ color: '#aaa' }}>Logado como: {nomeProfissional}</span>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '15px' }}>
+                    <span style={{ color: '#aaa' }}>Olá, {nomeProfissional}</span>
+                    <div style={{ width: '40px', height: '40px', borderRadius: '50%', backgroundColor: '#333', border: '2px solid #0069ff' }}></div>
+                </div>
             </header>
             
-            {/* 4. Renderiza o componente certo baseado na aba */}
+            {/* Renderiza o componente certo baseado na aba */}
             <div className="content-card">
                 {abaAtiva === 'calendario' ? <AgendaCalendario /> : <AdminAgendaList />}
             </div>
