@@ -2,36 +2,30 @@ import '../App.css';
 import { Link, useNavigate } from 'react-router-dom'; 
 import { useState } from 'react'; 
 import axios from 'axios'; 
-import { toast } from 'sonner';
+import { toast } from 'sonner'; 
+import Spinner from '../components/Spinner'; //
 
 /**
  * Esta é a página de Registro de Cliente (/registrar).
- * Agora atualizada com notificações modernas (Toasts).
+ * Agora com Spinner no botão de ação.
  */
 function RegisterPage() {
-  // --- Estados (Memória do Componente) ---
   const [nome, setNome] = useState("");
   const [email, setEmail] = useState("");
   const [telefone, setTelefone] = useState("");
   const [senha, setSenha] = useState("");
   
   const [carregando, setCarregando] = useState(false); 
-  // Removem os estados de 'erro' e 'sucesso' visuais, pois o Toast cuidará disso.
   
   const navegar = useNavigate(); 
-
-
-   // Função chamada quando o usuário clica no botão "Criar conta".
 
   async function handleSubmit(evento) {
     evento.preventDefault(); 
     setCarregando(true); 
 
-    // Limpeza do telefone (Remove tudo que não é número)
     const telefoneLimpo = telefone.replace(/\D/g, "");
 
     try {
-      // Faz a chamada para a API
       const resposta = await axios.post("/auth/registrar", {
         nome: nome,
         email: email,
@@ -39,23 +33,17 @@ function RegisterPage() {
         senha: senha
       });
       
-      // === MUDANÇA UX: Feedback com Toast ===
-      // Mostra uma notificação verde no topo da tela
       toast.success("Conta criada! Verifique seu e-mail para ativar.");
       
-      // Aguarda 3 segundos para o usuário ler e redireciona para o Login
       setTimeout(() => { navegar("/"); }, 3000);
 
     } catch (erroApi) {
       console.error("Erro no registro:", erroApi);
       
-      // Tratamento de erros com Toast Vermelho
       if (erroApi.response && erroApi.response.data) {
         if (erroApi.response.data.messages) {
-          // Erro de validação (ex: senha curta)
           toast.error(erroApi.response.data.messages[0]);
         } else if (typeof erroApi.response.data === 'string') {
-          // Erro simples (ex: email duplicado)
           toast.error(erroApi.response.data);
         } else {
           toast.error("Ocorreu um erro ao processar seu registro.");
@@ -68,7 +56,6 @@ function RegisterPage() {
     }
   }
 
-  // --- Renderização ---
   return (
     <div className="container-login">
       <h1 className="titulo-login">Criar sua conta</h1>
@@ -95,10 +82,11 @@ function RegisterPage() {
           <input type="password" id="senha" placeholder="Mínimo 8 caracteres" value={senha} onChange={(e) => setSenha(e.target.value)} required />
         </div>
         
-        {/* Remove os parágrafos <p> de erro/sucesso aqui, o Toast flutuante substitui eles */}
-        
+        {/*
+            Spinner centralizado no lugar do texto 'Criando conta...'
+        */}
         <button type="submit" className="botao-login" disabled={carregando}>
-          {carregando ? 'Criando conta...' : 'Criar conta'}
+          {carregando ? <Spinner /> : 'Criar conta'}
         </button>
       </form>
       

@@ -23,6 +23,10 @@ body {
   box-sizing: border-box; 
   line-height: normal;  
   transition: background-color 0.2s ease, filter 0.2s ease;
+  display: flex; /* Garante centralização do conteúdo (texto ou spinner) */
+  justify-content: center;
+  align-items: center;
+  min-height: 45px; /* Garante altura fixa para não pular quando troca texto por spinner */
 }
 
 .botao-login {
@@ -46,6 +50,21 @@ body {
 .botao-login:disabled {
   background-color: #555;
   cursor: not-allowed;
+}
+
+/* === SPINNER DE CARREGAMENTO (UX) === */
+.spinner {
+  width: 20px;
+  height: 20px;
+  border: 3px solid rgba(255, 255, 255, 0.3);
+  border-radius: 50%;
+  border-top-color: #fff;
+  animation: spin 0.8s ease-in-out infinite;
+  display: block;
+}
+
+@keyframes spin {
+  to { transform: rotate(360deg); }
 }
 
 /* === ESTILOS PARA LOGIN / REGISTRO === */
