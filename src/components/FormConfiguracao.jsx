@@ -1,13 +1,15 @@
 import '../App.css';
 import { useState, useEffect } from 'react';
 import axios from 'axios';
+import { toast } from 'sonner';
+import Spinner from './Spinner';
 
 function FormConfiguracao() {
     const [inicio, setInicio] = useState("");
     const [fim, setFim] = useState("");
     const [diasSelecionados, setDiasSelecionados] = useState([]);
     const [carregando, setCarregando] = useState(false);
-    const [mensagem, setMensagem] = useState({ texto: "", tipo: "" });
+
     const diasDaSemana = [
         { valor: 'MONDAY', rotulo: 'Segunda-feira' },
         { valor: 'TUESDAY', rotulo: 'Terça-feira' },
@@ -30,7 +32,7 @@ function FormConfiguracao() {
             setDiasSelecionados(resposta.data.diasFuncionamento);
         } catch (error) {
             console.error("Erro ao carregar configurações:", error);
-            setMensagem({ texto: "Não foi possível carregar as configurações atuais.", tipo: 'erro' });
+            toast.error("Não foi possível carregar as configurações atuais.");
         }
     }
 
@@ -45,7 +47,6 @@ function FormConfiguracao() {
     async function handleSubmit(e) {
         e.preventDefault();
         setCarregando(true);
-        setMensagem({ texto: "", tipo: "" });
 
         try {
             await axios.put("/configuracao", {
@@ -53,13 +54,13 @@ function FormConfiguracao() {
                 fimExpediente: fim,
                 diasFuncionamento: diasSelecionados
             });
-            setMensagem({ texto: "Configurações atualizadas com sucesso!", tipo: 'sucesso' });
+            toast.success("Configurações atualizadas com sucesso!");
         } catch (error) {
             console.error("Erro ao salvar:", error);
              if (error.response && error.response.status === 403) {
-                 setMensagem({ texto: "Você não tem permissão para alterar estas configurações.", tipo: 'erro' });
+                 toast.error("Você não tem permissão para alterar estas configurações.");
              } else {
-                 setMensagem({ texto: "Erro ao salvar as configurações.", tipo: 'erro' });
+                 toast.error("Erro ao salvar as configurações.");
              }
         } finally {
             setCarregando(false);
@@ -113,14 +114,8 @@ function FormConfiguracao() {
                     </div>
                 </div>
 
-                {mensagem.texto && (
-                    <p className={mensagem.tipo === 'sucesso' ? 'mensagem-sucesso' : 'mensagem-erro'} style={{ marginTop: '20px' }}>
-                        {mensagem.texto}
-                    </p>
-                )}
-
                 <button type="submit" className="botao-login" disabled={carregando} style={{ marginTop: '30px' }}>
-                    {carregando ? 'Salvando...' : 'Salvar Alterações'}
+                    {carregando ? <Spinner /> : 'Salvar Alterações'}
                 </button>
             </form>
         </div>

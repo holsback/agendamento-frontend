@@ -1,6 +1,8 @@
 import '../App.css';
 import { useState, useEffect } from 'react';
 import axios from 'axios';
+import { toast } from 'sonner';
+import Spinner from './Spinner';
 
 function FormMeusDados() {
     const [nome, setNome] = useState("");
@@ -12,10 +14,8 @@ function FormMeusDados() {
     const [senhaAtual, setSenhaAtual] = useState("");
 
     const [carregando, setCarregando] = useState(false);
-    const [erro, setErro] = useState("");
-    const [sucesso, setSucesso] = useState("");
 
-    // 1. Busca os dados atuais assim que o componente aparece na tela
+    // 1. Busca os dados atuais
     useEffect(() => {
         async function carregarDados() {
             try {
@@ -25,25 +25,23 @@ function FormMeusDados() {
                 setTelefone(resposta.data.telefone);
             } catch (error) {
                 console.error("Erro ao carregar perfil:", error);
-                setErro("Não foi possível carregar seus dados.");
+                toast.error("Não foi possível carregar seus dados.");
             }
         }
         carregarDados();
     }, []);
 
-    // 2. Envia as atualizações para a API
+    // 2. Envia as atualizações
     async function handleSubmit(e) {
         e.preventDefault();
         setCarregando(true);
-        setErro("");
-        setSucesso("");
 
-        // Limpa o telefone (remove parênteses, traços, etc.)
+        // Limpa o telefone
         const telefoneLimpo = telefone.replace(/\D/g, "");
 
-        // Validação extra no frontend: Se digitou nova senha, PRECISA da atual
+        // Validação de senha no frontend
         if (novaSenha && !senhaAtual) {
-            setErro("Para alterar a senha, você precisa informar sua Senha Atual.");
+            toast.error("Para alterar a senha, você precisa informar sua Senha Atual.");
             setCarregando(false);
             return;
         }
@@ -52,16 +50,15 @@ function FormMeusDados() {
             nome,
             email,
             telefone: telefoneLimpo,
-            // Só enviamos a nova senha se o usuário tiver digitado algo
             senha: novaSenha || null,
             senhaAtual: senhaAtual || null
         };
 
         try {
             await axios.put("/usuarios/meus-dados", dadosParaEnviar);
-            setSucesso("Dados atualizados com sucesso!");
+            toast.success("Dados atualizados com sucesso!");
             
-            // Limpa os campos de senha por segurança
+            // Limpa os campos de senha
             setNovaSenha("");
             setSenhaAtual("");
 
@@ -69,14 +66,14 @@ function FormMeusDados() {
             console.error("Erro ao atualizar:", erroApi);
             if (erroApi.response && erroApi.response.data) {
                  if (erroApi.response.data.messages) {
-                     setErro(erroApi.response.data.messages[0]);
+                     toast.error(erroApi.response.data.messages[0]);
                  } else if (typeof erroApi.response.data === 'string') {
-                     setErro(erroApi.response.data);
+                     toast.error(erroApi.response.data);
                  } else {
-                     setErro("Erro ao atualizar dados.");
+                     toast.error("Erro ao atualizar dados.");
                  }
             } else {
-                setErro("Erro ao conectar com o servidor.");
+                toast.error("Erro ao conectar com o servidor.");
             }
         } finally {
             setCarregando(false);
@@ -117,7 +114,6 @@ function FormMeusDados() {
                         placeholder="Digite sua senha atual" 
                         value={senhaAtual} 
                         onChange={e => setSenhaAtual(e.target.value)} 
-                        // O campo vira obrigatório (required) SE a novaSenha estiver preenchida
                         required={!!novaSenha} 
                     />
                 </div>
@@ -133,17 +129,13 @@ function FormMeusDados() {
                     />
                 </div>
 
-                {/* --- Feedback e Botão --- */}
-                {erro && <p className="mensagem-erro">{erro}</p>}
-                {sucesso && <p className="mensagem-sucesso">{sucesso}</p>}
-
                 <button 
                     type="submit" 
                     className="botao-login" 
                     disabled={carregando} 
                     style={{ marginTop: '20px' }}
                 >
-                    {carregando ? 'Salvando...' : 'Salvar Alterações'}
+                    {carregando ? <Spinner /> : 'Salvar Alterações'}
                 </button>
             </form>
         </div>

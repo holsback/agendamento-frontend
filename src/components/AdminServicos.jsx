@@ -1,16 +1,16 @@
-import '../App.css'; // Importa o CSS
-import { useState, useEffect } from 'react'; // Importa "ganchos" do React
-import axios from 'axios'; // Importa o Axios para API
+import '../App.css'; 
+import { useState, useEffect } from 'react'; 
+import axios from 'axios'; 
+import { toast } from 'sonner';
+import Spinner from './Spinner';
 
 /**
- * Este componente agora controla a tela INTEIRA de Serviços.
- * Ele alterna entre o modo "Lista" e o modo "Formulário".
- * (Refatorado no Passo 4.1)
+ * Catálogo de Serviços.
+ * Agora com Toasts e Spinners.
  */
 function AdminServicos() {
     
-    // --- Estados (Memória) do Componente ---
-    const [servicos, setServicos] = useState([]); // Guarda a lista de serviços
+    const [servicos, setServicos] = useState([]); 
     
     // Estados do Formulário
     const [nome, setNome] = useState("");
@@ -18,72 +18,53 @@ function AdminServicos() {
     const [preco, setPreco] = useState("");
     const [duracao, setDuracao] = useState("");
     
-    // Estados de Feedback e Controle
     const [carregando, setCarregando] = useState(false);
-    const [editandoId, setEditandoId] = useState(null); // Guarda o ID do serviço em edição
-    const [modo, setModo] = useState('lista'); // 'lista' ou 'formulario'
+    const [editandoId, setEditandoId] = useState(null); 
+    const [modo, setModo] = useState('lista'); 
 
-    /**
-     * Efeito (useEffect) que roda UMA VEZ quando o componente carrega.
-     */
     useEffect(() => {
         buscarServicos();
-    }, []); // Array vazio [] = roda só uma vez
+    }, []); 
 
-    /**
-     * Função que busca os serviços ATIVOS na API.
-     * (Otimizamos removendo a URL hardcoded no Passo 6.x)
-     */
     async function buscarServicos() {
         try {
-            const resposta = await axios.get("/servicos"); // URL relativa
+            const resposta = await axios.get("/servicos"); 
             setServicos(resposta.data);
         } catch (error) {
             console.error("Erro ao buscar serviços:", error);
+            toast.error("Não foi possível carregar os serviços.");
         }
     }
 
-    // --- Funções de Controle de Modo (do Passo 4.1) ---
+    // --- Funções de Controle ---
 
-    /**
-     * Função chamada ao clicar em "Editar" em um item da lista.
-     */
     function handleEditarClick(servico) {
         setEditandoId(servico.id); 
         setNome(servico.nome);
         setDescricao(servico.descricao);
         setPreco(servico.preco);
         setDuracao(servico.duracaoMinutos);
-        setModo('formulario'); // Muda a tela
+        setModo('formulario'); 
     }
 
-    /**
-     * Função chamada ao clicar em "Cancelar" no formulário.
-     */
     function handleCancelarEdicao() {
         setEditandoId(null); 
         setNome("");
         setDescricao("");
         setPreco("");
         setDuracao("");
-        setModo('lista'); // Volta para a lista
+        setModo('lista'); 
     }
 
-    /**
-     * Função chamada ao clicar em "+ Novo Serviço".
-     */
     function handleNovoClick() {
         setEditandoId(null);
         setNome("");
         setDescricao("");
         setPreco("");
         setDuracao("");
-        setModo('formulario'); // Muda a tela
+        setModo('formulario'); 
     }
 
-    /**
-     * Função chamada ao salvar (Criar ou Editar) no formulário.
-     */
     async function handleSubmit(e) {
         e.preventDefault(); 
         setCarregando(true);
@@ -98,58 +79,51 @@ function AdminServicos() {
 
         try {
             if (editandoId) {
-                // MODO EDIÇÃO (PUT)
-                await axios.put(`/servicos/${editandoId}`, dadosServico); // URL relativa
-                alert("Serviço atualizado com sucesso!");
+                // MODO EDIÇÃO
+                await axios.put(`/servicos/${editandoId}`, dadosServico); 
+                toast.success("Serviço atualizado com sucesso!");
             } else {
-                // MODO CRIAÇÃO (POST)
-                await axios.post("/servicos", dadosServico); // URL relativa
-                alert("Serviço criado com sucesso!");
+                // MODO CRIAÇÃO
+                await axios.post("/servicos", dadosServico); 
+                toast.success("Serviço criado com sucesso!");
             }
             
-            buscarServicos(); // Recarrega a lista
-            handleCancelarEdicao(); // Limpa o form e VOLTA PARA A LISTA
+            buscarServicos(); 
+            handleCancelarEdicao(); 
 
         } catch (error) {
             console.error("Erro ao salvar serviço:", error);
-            alert("Erro ao salvar (verifique se o nome já não existe).");
+            // Tenta pegar mensagem específica do backend
+            if (error.response && error.response.data && typeof error.response.data === 'string') {
+                toast.error(error.response.data);
+            } else {
+                toast.error("Erro ao salvar serviço. Verifique os dados.");
+            }
         } finally {
             setCarregando(false);
         }
     }
 
-    /**
-     * Função chamada ao clicar em "Excluir" (Desativar) em um item da lista.
-     */
     async function handleDeletar(id, nomeServico) {
+        // Mantem o confirm nativo por enquanto (será substituído por Modal depois)
         if (!confirm(`Tem certeza que deseja desativar o serviço "${nomeServico}"?\nIsso o tornará indisponível para novos agendamentos.`)) return;
         
         try {
-            // Chama o DELETE (que no backend faz um "soft delete" - seta ativo=false)
-            await axios.delete(`/servicos/${id}`); // URL relativa
-            alert("Serviço desativado com sucesso!");
-            buscarServicos(); // Recarrega a lista (o item sumirá)
+            await axios.delete(`/servicos/${id}`); 
+            toast.success("Serviço desativado com sucesso!");
+            buscarServicos(); 
             
-        // === NOSSA ALTERAÇÃO DESTE PASSO ESTÁ AQUI ===
         } catch (error) {
-            // O 'soft delete' (setar ativo=false) NUNCA vai dar erro 409 (Conflito).
-            // O único erro provável aqui é um 403 (Token venceu) ou 500 (API caiu).
-            // Removemos o 'if (error.response.status === 409)'
-            // porque ele estava baseado numa premissa errada.
             console.error("Erro ao desativar serviço:", error);
-            alert("Não foi possível desativar o serviço. Tente novamente.");
+            toast.error("Não foi possível desativar o serviço.");
         }
     }
 
-    // --- Renderização Condicional (do Passo 4.1) ---
+    // --- Renderização ---
 
-    /**
-     * SE o modo for 'lista', renderiza o Catálogo (Lista)
-     */
     if (modo === 'lista') {
         return (
             <div className="content-card">
-                {/* Cabeçalho da Lista: Título + Novo Botão */}
                 <div style={{ 
                     display: 'flex', 
                     justifyContent: 'space-between', 
@@ -167,9 +141,7 @@ function AdminServicos() {
                     </button>
                 </div>
 
-                {/* A Lista de Serviços */}
                 <ul className="lista-agendamentos">
-                    {/* Filtramos para mostrar apenas serviços ATIVOS */}
                     {servicos.filter(s => s.ativo).map(servico => (
                         <li key={servico.id} style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }}>
                             <div>
@@ -190,7 +162,6 @@ function AdminServicos() {
                                         style={{ backgroundColor: '#0069ff33', color: '#0069ff', border: '1px solid #0069ff', padding: '6px 12px', borderRadius: '6px', cursor: 'pointer', fontSize: '13px' }}>
                                     Editar
                                 </button>
-                                {/* Botão Excluir/Desativar */}
                                 <button onClick={() => handleDeletar(servico.id, servico.nome)}
                                         style={{ backgroundColor: '#4d2626', color: '#ff8a80', border: '1px solid #ff8a80', padding: '6px 12px', borderRadius: '6px', cursor: 'pointer', fontSize: '13px' }}>
                                     Desativar
@@ -203,9 +174,6 @@ function AdminServicos() {
         );
     }
 
-    /**
-     * SE o modo for 'formulario', renderiza o Formulário (centralizado)
-     */
     if (modo === 'formulario') {
         return (
             <div className="content-card" style={{ maxWidth: '700px', margin: '0 auto' }}>
@@ -240,7 +208,7 @@ function AdminServicos() {
                             disabled={carregando} 
                             style={{ flex: 2, marginTop: 0 }}
                         >
-                            {carregando ? 'Salvando...' : (editandoId ? 'Salvar Alterações' : 'Adicionar Serviço')}
+                            {carregando ? <Spinner /> : (editandoId ? 'Salvar Alterações' : 'Adicionar Serviço')}
                         </button>
                         
                         <button 
