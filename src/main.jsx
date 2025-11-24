@@ -1,10 +1,9 @@
 import React from 'react'
 import ReactDOM from 'react-dom/client'
 import './index.css'
-// Importa as ferramentas de roteamento (para definir as URLs do site)
 import { createBrowserRouter, RouterProvider } from 'react-router-dom'
-// Importa o Axios (nosso "mensageiro" para a API)
 import axios from 'axios'
+import { Toaster } from 'sonner';
 
 // Importa todas as nossas Páginas
 import LoginPage from './pages/LoginPage.jsx'
@@ -46,7 +45,7 @@ axios.interceptors.response.use(
       // Se o erro não foi no login, registro ou verificação de email, desloga o usuário
       if (!url.endsWith('/auth/login') && 
           !url.endsWith('/auth/registrar') && 
-          !url.includes('/auth/verificar-email')) { // <--- PROTEÇÃO DE VERIFICAÇÃO
+          !url.includes('/auth/verificar-email')) { 
         
         console.warn("Token vencido ou inválido! Forçando logout...");
         localStorage.removeItem("authToken"); // Remove o token quebrado
@@ -72,7 +71,7 @@ const router = createBrowserRouter([
     element: <RegisterPage />,
   },
   {
-    path: "/verificar-email", // Verificação de E-mail
+    path: "/verificar-email", // Página de verificação de token
     element: <VerificarEmailPage />,
   },
   {
@@ -92,6 +91,14 @@ const router = createBrowserRouter([
 // "Renderize" (desenhe) o aplicativo na tela
 ReactDOM.createRoot(document.getElementById('root')).render(
   <React.StrictMode>
+    {/* 
+        O <Toaster /> no topo da hierarquia.
+        richColors: Permite que sucesso seja verde e erro seja vermelho automaticamente.
+        position="top-center": As mensagens vão descer do topo, centralizadas (estilo moderno).
+    */}
+    <Toaster richColors position="top-center" />
+    
+    {/* O RouterProvider é o que "lê" a URL e mostra a página correta */}
     <RouterProvider router={router} /> 
   </React.StrictMode>,
 )
