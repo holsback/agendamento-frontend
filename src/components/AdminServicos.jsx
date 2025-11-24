@@ -1,12 +1,13 @@
 import '../App.css'; 
 import { useState, useEffect } from 'react'; 
 import axios from 'axios'; 
-import { toast } from 'sonner';
-import Spinner from './Spinner';
+import { toast } from 'sonner'; 
+import Spinner from './Spinner'; 
+import ConfirmationModal from './ConfirmationModal';
 
 /**
  * Catálogo de Serviços.
- * Agora com Toasts e Spinners.
+ * Agora com Modal de Confirmação personalizado.
  */
 function AdminServicos() {
     
@@ -21,6 +22,11 @@ function AdminServicos() {
     const [carregando, setCarregando] = useState(false);
     const [editandoId, setEditandoId] = useState(null); 
     const [modo, setModo] = useState('lista'); 
+
+    // === ESTADOS DO MODAL ===
+    const [modalAberto, setModalAberto] = useState(false);
+    const [idParaDeletar, setIdParaDeletar] = useState(null);
+    const [nomeParaDeletar, setNomeParaDeletar] = useState("");
 
     useEffect(() => {
         buscarServicos();
@@ -93,7 +99,6 @@ function AdminServicos() {
 
         } catch (error) {
             console.error("Erro ao salvar serviço:", error);
-            // Tenta pegar mensagem específica do backend
             if (error.response && error.response.data && typeof error.response.data === 'string') {
                 toast.error(error.response.data);
             } else {
@@ -104,15 +109,23 @@ function AdminServicos() {
         }
     }
 
-    async function handleDeletar(id, nomeServico) {
-        // Mantem o confirm nativo por enquanto (será substituído por Modal depois)
-        if (!confirm(`Tem certeza que deseja desativar o serviço "${nomeServico}"?\nIsso o tornará indisponível para novos agendamentos.`)) return;
-        
+    // === ABRIR O MODAL ===
+    // Apenas guarda os dados e mostra a janela, não deleta nada ainda.
+    function solicitarExclusao(id, nomeServico) {
+        setIdParaDeletar(id);
+        setNomeParaDeletar(nomeServico);
+        setModalAberto(true); // Abre a janela
+    }
+
+    // === EXECUTAR A DELEÇÃO ===
+    // Chamada apenas se o usuário clicar em "Confirmar" no modal.
+    async function confirmarExclusao() {
+        setModalAberto(false); // Fecha a janela imediatamente
+
         try {
-            await axios.delete(`/servicos/${id}`); 
-            toast.success("Serviço desativado com sucesso!");
+            await axios.delete(`/servicos/${idParaDeletar}`); 
+            toast.success(`Serviço "${nomeParaDeletar}" desativado!`);
             buscarServicos(); 
-            
         } catch (error) {
             console.error("Erro ao desativar serviço:", error);
             toast.error("Não foi possível desativar o serviço.");
@@ -162,7 +175,9 @@ function AdminServicos() {
                                         style={{ backgroundColor: '#0069ff33', color: '#0069ff', border: '1px solid #0069ff', padding: '6px 12px', borderRadius: '6px', cursor: 'pointer', fontSize: '13px' }}>
                                     Editar
                                 </button>
-                                <button onClick={() => handleDeletar(servico.id, servico.nome)}
+                                
+                                {/* Botão agora chama a função de ABRIR o modal */}
+                                <button onClick={() => solicitarExclusao(servico.id, servico.nome)}
                                         style={{ backgroundColor: '#4d2626', color: '#ff8a80', border: '1px solid #ff8a80', padding: '6px 12px', borderRadius: '6px', cursor: 'pointer', fontSize: '13px' }}>
                                     Desativar
                                 </button>
@@ -170,6 +185,15 @@ function AdminServicos() {
                         </li>
                     ))}
                 </ul>
+
+                {/* === MODAL DE CONFIRMAÇÃO === */}
+                <ConfirmationModal 
+                    isOpen={modalAberto}
+                    titulo="Desativar Serviço?"
+                    mensagem={`Tem certeza que deseja remover "${nomeParaDeletar}"? Ele não aparecerá mais para agendamentos.`}
+                    onClose={() => setModalAberto(false)}
+                    onConfirm={confirmarExclusao}
+                />
             </div>
         );
     }

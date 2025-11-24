@@ -2,14 +2,16 @@ import '../App.css';
 import { useState, useEffect } from 'react'; 
 import axios from 'axios'; 
 import { useNavigate } from 'react-router-dom';
-import { jwtDecode } from 'jwt-decode';
+import { jwtDecode } from 'jwt-decode'; 
+import { toast } from 'sonner'; // <--- IMPORT NOVO (Notificações)
 import FormCriarColaborador from '../components/FormCriarColaborador';
 import AdminAgendaList from '../components/AdminAgendaList';
 import FormConfiguracao from '../components/FormConfiguracao';
 import AdminServicos from '../components/AdminServicos';
 import AgendaCalendario from '../components/AgendaCalendario';
+import ConfirmationModal from '../components/ConfirmationModal'; // <--- IMPORT NOVO (Modal)
 
-// Componente (React) para o ícone de seta (usado no botão de recolher)
+// Componente (React) para o ícone de seta
 const IconeSeta = () => (
     <svg width="10" height="10" viewBox="0 0 6 10" fill="none" xmlns="http://www.w3.org/2000/svg" style={{ display: 'block' }}>
         <path d="M5 1L1 5L5 9" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
@@ -17,11 +19,10 @@ const IconeSeta = () => (
 );
 
 /**
- * Esta é a Página Principal (Componente "Pai") do Dashboard do Admin
+ * Página Principal do Dashboard do Admin
  */
 function DashboardAdmin() {
   
-  // --- Estados (Memória) do Componente ---
   const [colaboradores, setColaboradores] = useState([]); 
   const [carregando, setCarregando] = useState(true); 
   const [erro, setErro] = useState(""); 
@@ -30,32 +31,27 @@ function DashboardAdmin() {
   const [colaboradorEmEdicao, setColaboradorEmEdicao] = useState(null); 
   const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(false); 
   
-  // Estado para controlar a visualização da aba "Gestão de Equipe"
   const [modoEquipe, setModoEquipe] = useState('lista');
-  
-  // === ESTADO PARA O NOME ===
-  const [nomeUsuario, setNomeUsuario] = useState(""); // Começa vazio
+  const [nomeUsuario, setNomeUsuario] = useState(""); 
+
+  // === ESTADOS DO MODAL ===
+  const [modalAberto, setModalAberto] = useState(false);
+  const [idParaDeletar, setIdParaDeletar] = useState(null);
+  const [nomeParaDeletar, setNomeParaDeletar] = useState("");
 
   const navegar = useNavigate(); 
 
-  /**
-   * Função para deslogar o usuário.
-   */
   function handleLogout() {
       localStorage.removeItem("authToken");
       delete axios.defaults.headers.common['Authorization'];
       navegar("/");
   }
 
-    // Objeto para "traduzir" os nomes das ROLES
     const nomesPerfis = {
       "ROLE_MASTER": "Master", "ROLE_DONO": "Dono", "ROLE_GERENTE": "Gerente",
       "ROLE_PROFISSIONAL": "Profissional", "ROLE_CLIENTE": "Cliente"
     };
 
-    /**
-     * Função que busca na API a lista de colaboradores (membros da equipe).
-     */
     async function buscarColaboradores() {
       setCarregando(true);
       try {
@@ -68,97 +64,91 @@ function DashboardAdmin() {
       }
     }
 
-    /**
-     * Função para deletar um colaborador pelo ID.
-     */
-    async function deletarColaborador(id, nome) {
-      if (!confirm(`Tem certeza que deseja deletar ${nome}?`)) return;
-      try {
-          await axios.delete(`/admin/deletar-colaborador/${id}`);
-          alert("Colaborador deletado!"); 
-          buscarColaboradores(); 
-      } catch (erroApi) {
-          alert("Erro ao deletar (verifique se ele não tem agendamentos vinculados).");
-      }
+    // === FUNÇÃO 1: ABRIR MODAL ===
+    function solicitarExclusao(id, nome) {
+        setIdParaDeletar(id);
+        setNomeParaDeletar(nome);
+        setModalAberto(true);
     }
 
-    /**
-     * Efeito (useEffect) que roda UMA VEZ quando a página carrega.
-     * Agora ele também decodifica o nome do usuário.
-     */
+    // === FUNÇÃO 2: EXECUTAR DELEÇÃO ===
+    async function confirmarExclusao() {
+        setModalAberto(false); // Fecha o modal
+        try {
+            await axios.delete(`/admin/deletar-colaborador/${idParaDeletar}`);
+            toast.success("Colaborador deletado com sucesso!"); 
+            buscarColaboradores(); 
+        } catch (erroApi) {
+            toast.error("Erro ao deletar (verifique se ele não tem agendamentos).");
+        }
+    }
+
     useEffect(() => { 
-        // 1. Lógica para pegar o nome do Token
         const token = localStorage.getItem("authToken");
         if (token) {
             try {
                 const decoded = jwtDecode(token);
-                
-                // O backend agora manda o 'nome' dentro do token.
-                // Se por acaso não tiver (token antigo), usamos "Admin" como fallback.
                 const nomeCompleto = decoded.nome || "Admin";
-                
-                // Pega apenas o primeiro nome (separa por espaço e pega o primeiro pedaço)
                 const primeiroNome = nomeCompleto.split(' ')[0];
-                
                 setNomeUsuario(primeiroNome);
             } catch (error) {
                 console.error("Erro ao decodificar nome:", error);
             }
         }
-
-        // 2. Busca os dados da tela
         buscarColaboradores(); 
     }, []); 
 
-    /**
-     * Função "Callback"
-     * Chamada pelo FormCriarColaborador após o sucesso.
-     */
     function handleSucessoEquipe() {
         buscarColaboradores(); 
         setColaboradorEmEdicao(null); 
         setModoEquipe('lista'); 
     }
 
-    /**
-     * Função que renderiza (desenha) a lista de membros na aba "Equipe".
-     */
     function renderizarListaMembros() {
         if (carregando) return <p>Carregando equipe...</p>;
         if (erro) return <p className="mensagem-erro">{erro}</p>;
         if (colaboradores.length === 0) return <p>Nenhum membro encontrado.</p>;
         
         return (
-            <ul className="lista-agendamentos">
-                {colaboradores.map(colab => (
-                    <li key={colab.id} style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }}>
-                        <div>
-                            <strong style={{ fontSize: '16px', marginBottom: '4px' }}>{colab.nome}</strong>
-                            <span style={{ color: '#0069ff', fontSize: '13px', fontWeight: 'bold' }}>
-                                {nomesPerfis[colab.perfil] || colab.perfil}
-                            </span>
-                            <p style={{ fontSize: '13px', color: '#aaa', margin: '4px 0 0 0' }}>{colab.email}</p>
-                            <p style={{ fontSize: '13px', color: '#aaa', margin: '0' }}>{colab.telefone}</p>
-                        </div>
-                        <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
-                            <button onClick={() => { setColaboradorEmEdicao(colab); setModoEquipe('formulario'); }}
-                                    style={{ backgroundColor: '#0069ff33', color: '#0069ff', border: '1px solid #0069ff', padding: '6px 12px', borderRadius: '6px', cursor: 'pointer', fontSize: '13px' }}>
-                                Editar
-                            </button>
-                            <button onClick={() => deletarColaborador(colab.id, colab.nome)}
-                                    style={{ backgroundColor: '#4d2626', color: '#ff8a80', border: '1px solid #ff8a80', padding: '6px 12px', borderRadius: '6px', cursor: 'pointer', fontSize: '13px' }}>
-                                Excluir
-                            </button>
-                        </div>
-                    </li>
-                ))}
-            </ul>
+            <>
+                <ul className="lista-agendamentos">
+                    {colaboradores.map(colab => (
+                        <li key={colab.id} style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }}>
+                            <div>
+                                <strong style={{ fontSize: '16px', marginBottom: '4px' }}>{colab.nome}</strong>
+                                <span style={{ color: '#0069ff', fontSize: '13px', fontWeight: 'bold' }}>
+                                    {nomesPerfis[colab.perfil] || colab.perfil}
+                                </span>
+                                <p style={{ fontSize: '13px', color: '#aaa', margin: '4px 0 0 0' }}>{colab.email}</p>
+                                <p style={{ fontSize: '13px', color: '#aaa', margin: '0' }}>{colab.telefone}</p>
+                            </div>
+                            <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
+                                <button onClick={() => { setColaboradorEmEdicao(colab); setModoEquipe('formulario'); }}
+                                        style={{ backgroundColor: '#0069ff33', color: '#0069ff', border: '1px solid #0069ff', padding: '6px 12px', borderRadius: '6px', cursor: 'pointer', fontSize: '13px' }}>
+                                    Editar
+                                </button>
+                                {/* Botão agora chama a função que abre o Modal */}
+                                <button onClick={() => solicitarExclusao(colab.id, colab.nome)}
+                                        style={{ backgroundColor: '#4d2626', color: '#ff8a80', border: '1px solid #ff8a80', padding: '6px 12px', borderRadius: '6px', cursor: 'pointer', fontSize: '13px' }}>
+                                    Excluir
+                                </button>
+                            </div>
+                        </li>
+                    ))}
+                </ul>
+
+                {/* === O MODAL FICA AQUI === */}
+                <ConfirmationModal 
+                    isOpen={modalAberto}
+                    titulo="Remover Colaborador?"
+                    mensagem={`Tem certeza que deseja remover "${nomeParaDeletar}" da equipe? Essa ação é irreversível.`}
+                    onClose={() => setModalAberto(false)}
+                    onConfirm={confirmarExclusao}
+                />
+            </>
         );
     }
 
-  /**
-   * Função principal que decide qual CONTEÚDO mostrar.
-   */
   function renderizarConteudoPrincipal() {
       
       // 1. ABA AGENDA GERAL 
@@ -240,50 +230,35 @@ function DashboardAdmin() {
       }
   }
 
-  // --- Renderização (HTML) da página ---
   return (
     <div className="admin-container">
-      {/* SIDEBAR */}
       <aside className={`admin-sidebar ${isSidebarCollapsed ? 'collapsed' : ''}`}>
-          
-          <button 
-              className="sidebar-toggle" 
-              onClick={() => setIsSidebarCollapsed(!isSidebarCollapsed)}
-          >
+          <button className="sidebar-toggle" onClick={() => setIsSidebarCollapsed(!isSidebarCollapsed)}>
               <IconeSeta />
           </button>
-
           <div className="sidebar-logo">
              ✂️ <span className="sidebar-logo-text">Agenda.Fácil</span>
           </div>
-
           <ul className="sidebar-menu">
-              <li className={`sidebar-item ${abaAtiva === 'agenda' ? 'active' : ''}`}
-                  onClick={() => setAbaAtiva('agenda')}>
+              <li className={`sidebar-item ${abaAtiva === 'agenda' ? 'active' : ''}`} onClick={() => setAbaAtiva('agenda')}>
                   📅 <span className="sidebar-item-text">Agenda Geral</span>
               </li>
-              <li className={`sidebar-item ${abaAtiva === 'equipe' ? 'active' : ''}`}
-                  onClick={() => setAbaAtiva('equipe')}>
+              <li className={`sidebar-item ${abaAtiva === 'equipe' ? 'active' : ''}`} onClick={() => setAbaAtiva('equipe')}>
                   👥 <span className="sidebar-item-text">Gestão de Equipe</span>
               </li>
-              <li className={`sidebar-item ${abaAtiva === 'servicos' ? 'active' : ''}`}
-                  onClick={() => setAbaAtiva('servicos')}>
+              <li className={`sidebar-item ${abaAtiva === 'servicos' ? 'active' : ''}`} onClick={() => setAbaAtiva('servicos')}>
                   ✂️ <span className="sidebar-item-text">Serviços</span>
               </li>
-              <li className={`sidebar-item ${abaAtiva === 'config' ? 'active' : ''}`}
-                  onClick={() => setAbaAtiva('config')}>
+              <li className={`sidebar-item ${abaAtiva === 'config' ? 'active' : ''}`} onClick={() => setAbaAtiva('config')}>
                   ⚙️ <span className="sidebar-item-text">Configurações</span>
               </li>
           </ul>
-
           <div className="sidebar-logout" onClick={handleLogout}>
             <span style={{ transform: 'rotate(180deg)' }}>➔</span>
             <span className="sidebar-item-text">Sair</span>
           </div>
-
       </aside>
 
-      {/* CONTEÚDO PRINCIPAL */}
       <main className="admin-content">
           <header className="admin-header">
               <h2>
@@ -297,7 +272,6 @@ function DashboardAdmin() {
                   <div style={{ width: '40px', height: '40px', borderRadius: '50%', backgroundColor: '#333', border: '2px solid #0069ff' }}></div>
               </div>
           </header>
-
           {renderizarConteudoPrincipal()}
       </main>
     </div>

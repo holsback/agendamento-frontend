@@ -1,55 +1,83 @@
 import '../App.css';
 import { useState, useEffect } from 'react';
 import axios from 'axios';
+import { toast } from 'sonner';
+import ConfirmationModal from './ConfirmationModal';
 
 /**
- * Este componente é a "Lista de Gerenciamento" para o Admin.
- * Ele busca todos os agendamentos e permite atualizar o status.
+ * Lista de Gerenciamento (Admin).
  */
 function AdminAgendaList() {
 
   const [agendamentos, setAgendamentos] = useState([]);
   const [carregando, setCarregando] = useState(true);
-  const [erro, setErro] = useState("");
+  
+  // === ESTADOS DO MODAL ===
+  const [modalAberto, setModalAberto] = useState(false);
+  const [idSelecionado, setIdSelecionado] = useState(null);
+  const [statusSelecionado, setStatusSelecionado] = useState(""); // "Concluído" ou "Cancelado"
 
-  // Busca todos os agendamentos (já vem ordenado do backend)
+  // Busca todos os agendamentos
   async function buscarAgendaGeral() {
     setCarregando(true);
     try {
       const resposta = await axios.get("/agendamentos");
       setAgendamentos(resposta.data);
-      setErro("");
     } catch (erroApi) {
       console.error("Erro ao buscar agenda geral:", erroApi);
-      setErro("Não foi possível carregar a agenda geral.");
+      toast.error("Não foi possível carregar a agenda geral.");
     } finally {
       setCarregando(false);
     }
   }
 
-  // Roda uma vez quando o componente carrega
   useEffect(() => {
     buscarAgendaGeral();
   }, []);
 
-  // Função para mudar o status (Concluir/Cancelar)
-  async function atualizarStatus(idAgendamento, novoStatus) {
-      if (!confirm(`ADMIN: Tem certeza que deseja marcar este agendamento como ${novoStatus}?`)) return;
+  // === FUNÇÃO 1: PREPARAR AÇÃO (Abre o Modal) ===
+  function solicitarAtualizacao(idAgendamento, novoStatus) {
+      setIdSelecionado(idAgendamento);
+      setStatusSelecionado(novoStatus);
+      setModalAberto(true); // Abre a janela
+  }
+
+  // === FUNÇÃO 2: EXECUTAR AÇÃO (Chama a API) ===
+  async function confirmarAtualizacao() {
+      setModalAberto(false); // Fecha a janela
+      
       try {
-          await axios.patch(`/agendamentos/${idAgendamento}/status`, {
-              status: novoStatus
+          await axios.patch(`/agendamentos/${idSelecionado}/status`, {
+              status: statusSelecionado
           });
+          
+          // Feedback visual diferente dependendo da ação
+          if (statusSelecionado === 'Concluído') {
+              toast.success("Agendamento concluído com sucesso!");
+          } else {
+              toast.success("Agendamento cancelado.");
+          }
+          
           buscarAgendaGeral(); // Recarrega a lista
       } catch (erroApi) {
-          alert("Erro ao atualizar status.");
+          toast.error("Erro ao atualizar o status do agendamento.");
       }
   }
 
+  // === AUXILIAR: Textos Dinâmicos do Modal ===
+  const getTituloModal = () => {
+      return statusSelecionado === 'Concluído' ? 'Concluir Atendimento?' : 'Cancelar Agendamento?';
+  };
+
+  const getMensagemModal = () => {
+      return statusSelecionado === 'Concluído' 
+          ? 'Deseja marcar este serviço como realizado?' 
+          : 'Tem certeza que deseja cancelar? O horário ficará livre novamente.';
+  };
+
   if (carregando) return <p>Carregando agenda geral...</p>;
-  if (erro) return <p className="mensagem-erro">{erro}</p>;
   if (agendamentos.length === 0) return <p>Nenhum agendamento no sistema.</p>;
 
-  // Usa a lista padrão
   return (
     <div className="lista-agendamentos"> 
         {agendamentos.map(ag => (
@@ -80,11 +108,14 @@ function AdminAgendaList() {
             {/* Botões de Ação */}
             {ag.status === 'Pendente' && (
                 <div style={{ marginTop: '15px', display: 'flex', gap: '10px' }}>
-                    <button onClick={() => atualizarStatus(ag.idAgendamento, 'Concluído')}
+                    {/* Botão Concluir -> Chama solicitarAtualizacao com 'Concluído' */}
+                    <button onClick={() => solicitarAtualizacao(ag.idAgendamento, 'Concluído')}
                         style={{ flex: 1, padding: '8px', backgroundColor: '#2a9d8f', color: 'white', border: 'none', borderRadius: '4px', cursor: 'pointer' }}>
                         ✅ Concluir
                     </button>
-                    <button onClick={() => atualizarStatus(ag.idAgendamento, 'Cancelado')}
+                    
+                    {/* Botão Cancelar -> Chama solicitarAtualizacao com 'Cancelado' */}
+                    <button onClick={() => solicitarAtualizacao(ag.idAgendamento, 'Cancelado')}
                         style={{ flex: 1, padding: '8px', backgroundColor: '#e76f51', color: 'white', border: 'none', borderRadius: '4px', cursor: 'pointer' }}>
                         ❌ Cancelar
                     </button>
@@ -92,6 +123,15 @@ function AdminAgendaList() {
             )}
         </li>
         ))}
+
+        {/* === MODAL DE CONFIRMAÇÃO === */}
+        <ConfirmationModal 
+            isOpen={modalAberto}
+            titulo={getTituloModal()}
+            mensagem={getMensagemModal()}
+            onClose={() => setModalAberto(false)}
+            onConfirm={confirmarAtualizacao}
+        />
     </div>
   );
 }
