@@ -3,7 +3,7 @@ import { Link, useNavigate } from 'react-router-dom';
 import { useState } from 'react'; 
 import axios from 'axios'; 
 import { toast } from 'sonner'; 
-import Spinner from '../components/Spinner'; //
+import Spinner from '../components/Spinner';
 
 /**
  * Esta é a página de Registro de Cliente (/registrar).

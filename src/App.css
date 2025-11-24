@@ -13,20 +13,23 @@ body {
 }
 
 /* === BOTÕES PADRONIZADOS (Alinhados) === */
-.botao-login, .botao-secundario {
+.botao-login,
+.botao-secundario {
   padding: 12px;
   border: none;
   border-radius: 5px;
   font-weight: bold;
   font-size: 16px;
   cursor: pointer;
-  box-sizing: border-box; 
-  line-height: normal;  
+  box-sizing: border-box;
+  line-height: normal;
   transition: background-color 0.2s ease, filter 0.2s ease;
-  display: flex; /* Garante centralização do conteúdo (texto ou spinner) */
+  display: flex;
+  /* Garante centralização do conteúdo (texto ou spinner) */
   justify-content: center;
   align-items: center;
-  min-height: 45px; /* Garante altura fixa para não pular quando troca texto por spinner */
+  min-height: 45px;
+  /* Garante altura fixa para não pular quando troca texto por spinner */
 }
 
 .botao-login {
@@ -34,17 +37,19 @@ body {
   color: white;
   margin-top: 10px;
 }
+
 .botao-login:hover {
   filter: brightness(1.1);
 }
 
 .botao-secundario {
-  background-color: #e76f51; 
+  background-color: #e76f51;
   color: white;
-  margin-top: 0; 
+  margin-top: 0;
 }
+
 .botao-secundario:hover {
-  background-color: #f4a261; 
+  background-color: #f4a261;
 }
 
 .botao-login:disabled {
@@ -64,7 +69,9 @@ body {
 }
 
 @keyframes spin {
-  to { transform: rotate(360deg); }
+  to {
+    transform: rotate(360deg);
+  }
 }
 
 /* === ESTILOS PARA LOGIN / REGISTRO === */
@@ -99,7 +106,7 @@ body {
   font-size: 14px;
 }
 
-.input-grupo input, 
+.input-grupo input,
 .input-grupo select {
   padding: 10px;
   border-radius: 5px;
@@ -120,11 +127,13 @@ body {
   font-size: 14px;
   margin-top: 10px;
 }
+
 .link-registro a {
   color: #0069ff;
   text-decoration: none;
   font-weight: bold;
 }
+
 .link-registro a:hover {
   text-decoration: underline;
 }
@@ -177,10 +186,10 @@ body {
 }
 
 .lista-agendamentos li .linha-item {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    width: 100%;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  width: 100%;
 }
 
 .lista-agendamentos li strong {
@@ -210,7 +219,7 @@ body {
   background-color: #222;
   border-right: 1px solid #333;
   display: flex;
-  flex-direction: column; 
+  flex-direction: column;
   padding: 20px;
   flex-shrink: 0;
   box-sizing: border-box;
@@ -223,7 +232,7 @@ body {
   width: 90px;
 }
 
-.admin-sidebar.collapsed .sidebar-logo-text { 
+.admin-sidebar.collapsed .sidebar-logo-text {
   display: none;
 }
 
@@ -274,7 +283,8 @@ body {
   display: flex;
   flex-direction: column;
   gap: 10px;
-  flex-grow: 1; /* Empurra o logout para baixo */
+  flex-grow: 1;
+  /* Empurra o logout para baixo */
 }
 
 .sidebar-item {
@@ -289,7 +299,8 @@ body {
   gap: 12px;
 }
 
-.sidebar-item:hover, .sidebar-item.active {
+.sidebar-item:hover,
+.sidebar-item.active {
   background-color: #0069ff1a;
   color: #0069ff;
 }
@@ -298,21 +309,23 @@ body {
   padding: 12px 15px;
   border-radius: 8px;
   cursor: pointer;
-  color: #ff8a80; 
+  color: #ff8a80;
   font-weight: 500;
   display: flex;
   align-items: center;
   gap: 12px;
-  margin-top: 20px; 
+  margin-top: 20px;
   border: 1px solid #4d2626;
-  background-color: #4d262633; 
+  background-color: #4d262633;
 }
+
 .sidebar-logout:hover {
-  background-color: #4d2626; 
+  background-color: #4d2626;
   color: white;
 }
+
 .admin-sidebar.collapsed .sidebar-logout {
-  justify-content: center; 
+  justify-content: center;
 }
 
 .admin-content {
@@ -341,7 +354,7 @@ body {
   border-radius: 12px;
   padding: 25px;
   margin-bottom: 30px;
-  box-shadow: 0 4px 20px rgba(0,0,0,0.2);
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.2);
 }
 
 /* === ESTILOS PARA SUB-ABAS (Calendário / Lista) === */
@@ -351,6 +364,7 @@ body {
   margin-bottom: 20px;
   border-bottom: 1px solid #333;
 }
+
 .sub-aba {
   padding: 10px 18px;
   cursor: pointer;
@@ -359,9 +373,11 @@ body {
   font-weight: 500;
   transition: all 0.2s ease;
 }
+
 .sub-aba:hover {
   color: #fff;
 }
+
 .sub-aba.active {
   color: #0069ff;
   font-weight: bold;
@@ -372,41 +388,53 @@ body {
 .fc {
   color: #f0f0f0;
 }
+
 .fc .fc-toolbar-title {
   color: #f0f0f0;
   font-size: 1.5em;
 }
+
 .fc .fc-button-primary {
   background-color: #0069ff;
   border: none;
 }
+
 .fc .fc-button-primary:hover {
   background-color: #0058d9;
 }
-.fc .fc-daygrid-day-number, .fc .fc-col-header-cell-cushion {
+
+.fc .fc-daygrid-day-number,
+.fc .fc-col-header-cell-cushion {
   color: #ccc;
   text-decoration: none;
 }
+
 .fc .fc-day-today {
   background-color: #0069ff1a !important;
 }
+
 .fc .fc-timegrid-slot {
   border-bottom-color: #333 !important;
 }
-.fc-theme-standard th, .fc-theme-standard td {
-    border-color: #333;
+
+.fc-theme-standard th,
+.fc-theme-standard td {
+  border-color: #333;
 }
 
 .fc-event {
-  height: auto !important; /* Permite o bloco crescer verticalmente */
-  padding: 3px 5px !important; /* Padding interno */
+  height: auto !important;
+  /* Permite o bloco crescer verticalmente */
+  padding: 3px 5px !important;
+  /* Padding interno */
   font-size: 13px;
   line-height: 1.3;
 }
 
 .fc-event-main {
-  white-space: normal !important; /* FORÇA a quebra de linha */
-  overflow: hidden !important; 
+  white-space: normal !important;
+  /* FORÇA a quebra de linha */
+  overflow: hidden !important;
   text-overflow: ellipsis !important;
 }
 
@@ -458,30 +486,36 @@ body {
 
   /* 2. Ajusta o container principal */
   .admin-container {
-    flex-direction: column; /* Muda de lado-a-lado para vertical */
+    flex-direction: column;
+    /* Muda de lado-a-lado para vertical */
   }
 
   /* 3. Ajusta o conteúdo principal */
   .admin-content {
     padding: 20px;
-    padding-bottom: 90px; /* Deixa espaço extra embaixo para a barra não tampar o conteúdo */
+    padding-bottom: 90px;
+    /* Deixa espaço extra embaixo para a barra não tampar o conteúdo */
     width: 100%;
   }
 
   /* 4. Mostra e estiliza a Barra Inferior */
   .bottom-nav {
-    display: flex; /* Agora ela aparece! */
-    position: fixed; /* Gruda na tela */
+    display: flex;
+    /* Agora ela aparece! */
+    position: fixed;
+    /* Gruda na tela */
     bottom: 0;
     left: 0;
     width: 100%;
     height: 70px;
     background-color: #222;
     border-top: 1px solid #333;
-    justify-content: space-around; /* Distribui os botões igualmente */
+    justify-content: space-around;
+    /* Distribui os botões igualmente */
     align-items: center;
-    z-index: 1000; /* Garante que fique por cima de tudo */
-    box-shadow: 0 -2px 10px rgba(0,0,0,0.3);
+    z-index: 1000;
+    /* Garante que fique por cima de tudo */
+    box-shadow: 0 -2px 10px rgba(0, 0, 0, 0.3);
   }
 
   /* Estilo de cada botão da barra inferior */
@@ -497,7 +531,8 @@ body {
     gap: 4px;
     cursor: pointer;
     padding: 5px;
-    flex: 1; /* Faz cada botão ocupar o mesmo espaço */
+    flex: 1;
+    /* Faz cada botão ocupar o mesmo espaço */
   }
 
   /* Ícones dos botões */
@@ -510,27 +545,153 @@ body {
   .bottom-nav-item.active {
     color: #0069ff;
   }
-  
+
   .bottom-nav-item.active span.icon {
-    transform: scale(1.1); /* Pequeno efeito de zoom */
+    transform: scale(1.1);
+    /* Pequeno efeito de zoom */
     transition: transform 0.2s;
   }
-  
+
   /* Ajuste no Header para celular */
   .admin-header {
     flex-direction: column;
     align-items: flex-start;
     gap: 10px;
   }
-  
+
   /* Ajuste nos cards para celular */
   .lista-agendamentos li {
-    flex-direction: column !important; /* Empilha o conteúdo do card */
+    flex-direction: column !important;
+    /* Empilha o conteúdo do card */
     align-items: stretch !important;
   }
-  
-  .lista-agendamentos li > div:last-child {
-    align-items: stretch !important; /* Botões ocupam largura total */
+
+  .lista-agendamentos li>div:last-child {
+    align-items: stretch !important;
+    /* Botões ocupam largura total */
     margin-top: 15px;
   }
+
+  .empty-state {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    padding: 40px;
+    text-align: center;
+    background-color: #2a2a2a;
+    border: 2px dashed #444;
+    /* Borda tracejada indica "espaço livre" */
+    border-radius: 12px;
+    color: #aaa;
+    margin-top: 20px;
+    transition: border-color 0.2s;
+  }
+
+  .empty-state:hover {
+    border-color: #666;
+  }
+
+  .empty-icon {
+    font-size: 48px;
+    margin-bottom: 15px;
+    opacity: 0.5;
+    /* Deixa o ícone mais discreto */
+  }
+
+  .empty-state h3 {
+    margin: 0 0 10px 0;
+    color: #f0f0f0;
+    font-size: 18px;
+  }
+
+  .empty-state p {
+    margin: 0;
+    font-size: 14px;
+    max-width: 350px;
+    /* Evita que o texto fique muito largo */
+    line-height: 1.5;
+  }
+
+  .empty-action {
+    margin-top: 25px;
+  }
+
+  .modal-overlay {
+  position: fixed;
+  top: 0; 
+  left: 0; 
+  right: 0; 
+  bottom: 0;
+  background-color: rgba(0, 0, 0, 0.75); /* Fundo preto semi-transparente */
+  display: flex;
+  align-items: center; /* Centraliza verticalmente */
+  justify-content: center; /* Centraliza horizontalmente */
+  z-index: 9999; /* Garante que fique na frente de TUDO */
+  backdrop-filter: blur(2px); /* Um leve desfoque no fundo para dar foco */
+}
+
+.modal-content {
+  background-color: #2a2a2a;
+  padding: 25px;
+  border-radius: 12px;
+  width: 90%;
+  max-width: 400px; /* Não deixa ficar muito largo em telas grandes */
+  border: 1px solid #444;
+  box-shadow: 0 10px 30px rgba(0,0,0,0.5); /* Sombra forte para destacar */
+  text-align: center;
+  animation: fadeIn 0.2s ease-out;
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; transform: scale(0.9); }
+  to { opacity: 1; transform: scale(1); }
+}
+
+.modal-content h3 {
+  margin-top: 0;
+  color: #f0f0f0;
+}
+
+.modal-content p {
+  color: #ccc;
+  font-size: 15px;
+  line-height: 1.5;
+  margin-bottom: 25px;
+}
+
+.modal-actions {
+  display: flex;
+  gap: 10px;
+  justify-content: center;
+}
+
+.botao-perigo {
+  background-color: #ff4d4d;
+  color: white;
+  border: none;
+  padding: 10px 20px;
+  border-radius: 6px;
+  font-weight: bold;
+  cursor: pointer;
+  flex: 1;
+}
+.botao-perigo:hover {
+  background-color: #cc0000;
+}
+
+.botao-cancelar {
+  background-color: transparent;
+  border: 1px solid #555;
+  color: #ccc;
+  padding: 10px 20px;
+  border-radius: 6px;
+  font-weight: bold;
+  cursor: pointer;
+  flex: 1;
+}
+.botao-cancelar:hover {
+  background-color: #333;
+  color: #fff;
+}
 }

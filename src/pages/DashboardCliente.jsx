@@ -1,10 +1,13 @@
 import '../App.css'; 
 import { useState, useEffect } from 'react'; 
 import { useNavigate } from 'react-router-dom';
-import { jwtDecode } from 'jwt-decode';
+import { jwtDecode } from 'jwt-decode'; 
 import FormNovoAgendamento from '../components/FormNovoAgendamento';
 import FormMeusDados from '../components/FormMeusDados';
 import axios from 'axios';
+import { toast } from 'sonner';
+import Spinner from '../components/Spinner';
+import EmptyState from '../components/EmptyState';
 
 const IconeSeta = () => (
     <svg width="10" height="10" viewBox="0 0 6 10" fill="none" xmlns="http://www.w3.org/2000/svg" style={{ display: 'block' }}>
@@ -21,7 +24,6 @@ function DashboardCliente() {
   const [meusAgendamentos, setMeusAgendamentos] = useState([]);
   const [carregandoLista, setCarregandoLista] = useState(true);
   
-  // === ESTADO PARA O NOME ===
   const [nomeCliente, setNomeCliente] = useState(""); 
 
   const navegar = useNavigate();
@@ -32,17 +34,13 @@ function DashboardCliente() {
       navegar("/");
   }
 
-  /**
-   * Decodifica o Nome do Usuário
-   */
+  // Efeito 1: Decodifica o Nome do Usuário
   useEffect(() => {
       const token = localStorage.getItem("authToken");
       if (token) {
           try {
               const decoded = jwtDecode(token);
-              // Pega o nome do token, ou usa "Cliente" se der erro
               const nomeCompleto = decoded.nome || "Cliente";
-              // Pega só o primeiro nome
               setNomeCliente(nomeCompleto.split(' ')[0]);
           } catch (error) {
               console.error("Erro ao ler token:", error);
@@ -50,9 +48,7 @@ function DashboardCliente() {
       }
   }, []);
 
-  /**
-   * Busca os agendamentos
-   */
+  // Efeito 2: Busca os agendamentos
   useEffect(() => {
       if (abaAtiva === 'meus_agendamentos') {
         async function buscarMeusAgendamentos() {
@@ -62,6 +58,7 @@ function DashboardCliente() {
                 setMeusAgendamentos(resposta.data);
             } catch (error) {
                 console.error("Erro ao buscar meus agendamentos:", error);
+                toast.error("Não foi possível carregar seus agendamentos.");
             } finally {
                 setCarregandoLista(false);
             }
@@ -82,21 +79,43 @@ function DashboardCliente() {
           await axios.patch(`/agendamentos/${id}/status`, {
               status: "Cancelado"
           });
-          alert("Agendamento cancelado!");
-          // Força atualização da lista
+          toast.success("Agendamento cancelado!");
           setRefreshKey(prevKey => prevKey + 1);
       } catch (error) {
-          alert("Erro ao cancelar o agendamento.");
+          toast.error("Erro ao cancelar o agendamento.");
       }
   }
 
   function handleVincularGoogle(agendamento) {
-      alert("Funcionalidade futura: Vincular agendamento " + agendamento.idAgendamento + " ao Google Calendar.");
+      toast.info("Funcionalidade futura: Vincular ao Google Calendar.");
   }
   
   function renderizarListaMeusAgendamentos() {
-      if (carregandoLista) return <p>Carregando seus agendamentos...</p>;
-      if (meusAgendamentos.length === 0) return <p>Você ainda não tem agendamentos.</p>;
+      // === MUDANÇA VISUAL (Spinner) ===
+      if (carregandoLista) {
+          return (
+              <div style={{ display: 'flex', justifyContent: 'center', padding: '50px' }}>
+                  <Spinner />
+              </div>
+          );
+      }
+
+      // === MUDANÇA VISUAL (Empty State) ===
+      if (meusAgendamentos.length === 0) {
+          return (
+              <EmptyState 
+                  titulo="Sua agenda está livre!" 
+                  descricao="Você ainda não possui nenhum agendamento. Que tal marcar um horário agora?"
+              >
+                  <button 
+                      className="botao-login" 
+                      onClick={() => setAbaAtiva('novo')}
+                  >
+                      Novo Agendamento
+                  </button>
+              </EmptyState>
+          );
+      }
 
       return (
           <ul className="lista-agendamentos">
@@ -331,4 +350,4 @@ function DashboardCliente() {
   )
 }
 
-export default DashboardCliente
+export default DashboardCliente;
